@@ -4,6 +4,23 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.4 — upstream base `8.4.0`
+
+Fix: day-based postpone increments (the button and its "N days" menu items) now count **business
+days**, not calendar days rolled off a weekend at the end. Previously, "by 1/2/3 days" for a task
+scheduled just before a weekend all landed on the same following Monday — correct individually, but
+confusing and duplicate-looking together. Now each amount lands on its own distinct following business
+day (e.g. for a task scheduled on a Friday: by 1 day → Monday, by 2 days → Tuesday, by 3 days →
+Wednesday, ...).
+
+- Wording changes to match: "by N days" becomes "by N business days" whenever the setting actually
+  changes what the increment means (day-based units, amount > 0). The fixed "tomorrow" item only says
+  "next business day" instead when a weekend was actually skipped over — if tomorrow is already a
+  weekday, it still just says "tomorrow".
+- Week/month increments are unchanged: they still just roll their single final result off a weekend, not
+  business-day-count through the whole increment (a "business week"/"business month" isn't a clear
+  enough concept to justify counting them that way).
+
 ## 8.4.0+fork.3 — upstream base `8.4.0`
 
 Fix: the "Postpone to next business day" setting added in `8.4.0+fork.2` was only wired into
