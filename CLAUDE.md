@@ -80,6 +80,22 @@ Version string format: `<upstream-version>+fork.<N>` (e.g. `8.4.0+fork.1`, `8.4.
    spread-recovery mechanism carries it forward automatically, the same way priority/tags already are, so
    there was no special-case code needed — it just had to not be reset), and `happens` now includes it.
    The access-key clash is avoided too: `K`, not `C` (Created Date's).
+
+   **Important correction, found by testing against the actual Reminder plugin (`8.4.0+fork.12`):** the
+   original roadmap research's assumption that Reminder "already understands a distinct `⏰ HH:MM` signifier
+   ... no changes needed on the Reminder side" was **wrong** — reverse-engineering Reminder's own bundled
+   `main.js` (its "Tasks plugin format" reader) showed it needs a *full date* (optionally with a time) under
+   `⏰`, exactly like it does for `📅`/`⏳`/`🛫`; a bare `HH:mm` fails to parse and the *entire line* is then
+   silently not recognised as a reminder at all (Reminder tries `⏰` first, before falling back to the other
+   three, per its own "Fall back to due, scheduled, or start date" setting). Fixed by writing `⏰ YYYY-MM-DD
+   HH:mm` (the anchor date plus the time) instead — see `symbolAndReminderTimeValue` in
+   `DefaultTaskSerializer.ts` — while still reading a bare `HH:mm` for backward compatibility with tasks an
+   earlier fork version already wrote. The *rendered* line still shows just the bare time (the date's
+   already visible via the anchor field right beside it) — see `TaskLineRenderer.ts`'s override of that one
+   component's rendered text. This also meant every reminder-setting path now guarantees an anchor date
+   exists (creating today's `scheduledDate` if the task has none at all) — see `SetReminderTime`'s doc
+   comment in `ReminderInstructions.ts` — since a reminder time with nowhere to attach it is exactly the
+   state Reminder can't recognise.
 2. ~~**Postpone (⏩) to next business day.**~~ **Done** (merged into `main`). Behind a setting
    (`postponeSkipWeekends`, default off) in `src/Config/Settings.ts`/`SettingsTab.ts` — remember this file has
    **two** parallel settings UIs that both need updating (see the note above). The actual date math is

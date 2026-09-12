@@ -4,6 +4,41 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.12 — upstream base `8.4.0`
+
+Major fix, reported after testing `8.4.0+fork.11` in a vault with the actual Reminder plugin installed:
+reminders set through this feature were never picked up by Reminder **at all**.
+
+Root cause, found by reverse-engineering Reminder's own bundled code: its "Tasks plugin format" reader
+needs a *full date* (optionally with a time) under the `⏰` symbol - exactly like it does for `📅`/`⏳`/`🛫`
+
+- to recognise a line as a reminder. This fork was writing a bare `⏰ HH:mm` (time only, no date), which
+Reminder's own date parser can't parse at all; since `⏰`, when present, is checked *before* falling back to
+the due/scheduled/start date (per Reminder's own "Fall back to due, scheduled, or start date" setting), an
+unparseable `⏰` made Reminder treat the *entire line* as not a reminder, silently overriding what would
+otherwise have been a perfectly valid due/scheduled/start-based one.
+
+Fixed:
+
+- `⏰` now always carries a full date and time (e.g. `⏰ 2024-01-15 14:30`) - the anchor date (due, else
+  scheduled, else start) combined with the reminder time, via the existing `Task.reminderDateTime` getter.
+  A bare `HH:mm` is still *read* for backward compatibility with tasks already written by earlier fork
+  versions, but is only ever *written* again as a last-resort fallback for the (now much rarer) case of a
+  reminder time with no anchor date at all.
+- Every way of setting a reminder time (menu presets, relative offsets, the modal field, "Custom time…")
+  now guarantees an anchor date exists - creating today's `scheduledDate` if the task has none - since a
+  reminder time with nowhere to attach it is exactly the state Reminder can't recognise. Removing a
+  reminder does *not* remove its anchor date; the relationship is one-directional.
+- The *rendered* line still shows just the bare time (`⏰ 14:30`), not the full date - the date is already
+  visible via the due/scheduled/start field right beside it, so repeating it would just be noise.
+
+**If you want a plain scheduled-or-due date with no `⏰` field to *not* ring at all** (rather than firing at
+Reminder's own default time-of-day), this needs a change on Reminder's side, not this fork's: its "Fall back
+to due, scheduled, or start date" setting (under Reminder's settings → Tasks plugin format) controls exactly
+that fallback - turn it off if you only ever want the explicit `⏰` field to create reminders. This fork
+doesn't have to disable that fallback itself: the invariant it *does* guarantee (an anchor date whenever
+there's a `⏰`) holds regardless of how that setting is configured.
+
 ## 8.4.0+fork.11 — upstream base `8.4.0`
 
 Two more fixes after testing `8.4.0+fork.10`:
