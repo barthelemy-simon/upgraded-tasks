@@ -4,6 +4,19 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.7 — upstream base `8.4.0`
+
+Enhancement, after testing `8.4.0+fork.6`: the edit modal's Reminder field now offers the same presets and
+relative offsets as the rendered line's click/right-click menu, as a native autocomplete list shown on
+focus (an `<input list>`/`<datalist>` pair, so no custom dropdown widget or extra CSS is needed — same
+"reuse the host app's/browser's own primitives" approach as the rest of this redesign). Picking one just
+fills the field with its value (a plain time for a preset, the relative phrase itself for an offset), it
+doesn't apply anything until Apply is pressed, same as typing that value would.
+
+Both entry points are now built from one shared function
+(`src/DateTime/ReminderSuggestions.ts::buildReminderSuggestions`), so "the same options" is guaranteed by
+construction rather than by keeping two option-lists in sync by hand.
+
 ## 8.4.0+fork.6 — upstream base `8.4.0`
 
 Fix/redesign, after testing `8.4.0+fork.5`'s reminder time entry: both the modal's plain time input and
