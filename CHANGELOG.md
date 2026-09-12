@@ -4,6 +4,14 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.3 — upstream base `8.4.0`
+
+Fix: the "Postpone to next business day" setting added in `8.4.0+fork.2` was only wired into
+`display()`, the legacy imperative settings UI used solely as a fallback on very old Obsidian. On any
+normal (1.13.0+) install, the tab is actually rendered from `getSettingDefinitions()`, so the setting was
+completely invisible with no error. Added the missing declarative `postponingGroup()` registration — see
+the new note in `CLAUDE.md` about this fork's two parallel settings UIs.
+
 ## 8.4.0+fork.2 — upstream base `8.4.0`
 
 Roadmap feature: **postpone to next business day**.
