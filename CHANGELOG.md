@@ -4,6 +4,20 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.2 — upstream base `8.4.0`
+
+Roadmap feature: **postpone to next business day**.
+
+- New setting, "Postpone to next business day" (off by default), under a new "Postponing" section in
+  Tasks' settings tab.
+- When enabled, applies uniformly to the ⏩ postpone button and every item in its right-click menu (day,
+  week and month increments, and the fixed "tomorrow" item): whenever the computed date would land on a
+  Saturday or Sunday, it rolls forward to the following Monday instead. The fixed "today" item is
+  deliberately exempt — it means "set to today", not a postponement, so it's never moved even if today
+  itself is a weekend day.
+- The general date-field right-click menu (e.g. quick-setting a Due/Scheduled/Start date directly, not via
+  the postpone button) is unaffected — this setting only governs the postpone feature.
+
 ## 8.4.0+fork.1 — upstream base `8.4.0`
 
 Fork setup, no user-facing features yet:
