@@ -4,6 +4,24 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.10 — upstream base `8.4.0`
+
+Two fixes after testing `8.4.0+fork.9`:
+
+- The edit modal's reminder field didn't actually round a typed (or suggestion-filled) relative offset -
+  e.g. typing "in 30 minutes" resolved to the exact, unrounded time rather than the rounded time the same
+  offset's menu item would apply, so the field and the rendered line's menu disagreed. New
+  `resolveTypedReminderTime` (in `ReminderTimeParser.ts`) rounds a relative result to the configured
+  increment, same as the menu's quick-picks; used by both the modal's live preview
+  (`ReminderEditor.svelte`) and by `EditableTask.applyEdits` on save, so what's shown while typing is what
+  actually gets saved. A plain clock time is never rounded either way. The "Custom time…" prompt
+  (`ReminderPromptModal`) is unchanged - still always exact, since typing into that escape hatch is already
+  a deliberate choice to bypass the quick-pick options.
+- The modal's native date/time pickers' indicator icon (introduced in `fork.9` to make the two types look
+  consistent) ended up pinned to the right for both - the user asked for the left instead, to match
+  Obsidian's own placement for "date" elsewhere in the app. `EditTask.scss` now orders the icon before the
+  digits for both types.
+
 ## 8.4.0+fork.9 — upstream base `8.4.0`
 
 Two fixes/enhancements after testing `8.4.0+fork.8`:
