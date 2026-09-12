@@ -4,6 +4,23 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.9 — upstream base `8.4.0`
+
+Two fixes/enhancements after testing `8.4.0+fork.8`:
+
+- The edit modal's small native pickers next to the parsed-date preview (the quick-pick `<input
+  type="date">`/`<input type="time">`) could look inconsistent with each other: Obsidian's own CSS polishes
+  `type="date"` (it's used elsewhere in the app), but never touches `type="time"`, which fell back to the
+  browser's raw, unstyled look — different border, background, font, and icon placement. `EditTask.scss` now
+  styles `.tasks-modal-date-editor-picker` explicitly (border/background/font matching the rest of the
+  modal's inputs, and the calendar/clock indicator icon pinned to the same side) so both types render as one
+  consistent picker regardless of which date-like field they belong to.
+- A relative reminder offset's label (e.g. "In 30 minutes (11:00)") now flags when the time shown is a
+  rounded approximation rather than the exact offset: with rounding enabled (the default), it reads "In 30
+  minutes (~11:00)"; with "No rounding" selected, the "~" is omitted since the time is then exact. Applies
+  everywhere the shared `buildReminderSuggestions` list is shown — the rendered line's menu and the modal's
+  autocomplete alike.
+
 ## 8.4.0+fork.8 — upstream base `8.4.0`
 
 Bug fix, reported after testing `8.4.0+fork.7`: clicking a relative-offset item in the reminder menu (e.g.
