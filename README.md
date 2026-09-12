@@ -10,6 +10,18 @@
 > 2. **Business-day postponing** — the ⏩ postpone button skips weekends.
 > 3. **Cross-project tabular view** — a grouped-table rendering mode (bucket × project) for query results.
 >
+> **Staying in sync with upstream** — keeping upstream's fixes and new features flowing in is a priority for this fork:
+>
+> - Sync by merging (`git fetch upstream && git merge upstream/main`), never rebasing — this fork's history is already
+>   merge-based, and rebasing would rewrite commits already pushed.
+> - A merge only forces a decision on files this fork has actually touched (mainly `manifest.json`/`package.json` identity
+>   fields, and whichever source files a fork feature lives in) — everything else merges cleanly from upstream.
+> - Conflicts are resolved by combining both sides, never by discarding a fork-specific change to make the conflict go away.
+> - Versions are `<upstream-version>+fork.<N>` (e.g. `8.4.0+fork.1`), so it's always clear which upstream release a build
+>   is based on. See `CHANGELOG.md` for what's fork-specific at each version.
+>
+> Full detail (exact conflict-prone files, build/reload steps after a sync) is in `CLAUDE.md`.
+>
 > For the original plugin, its documentation, and its own roadmap, see the upstream repo linked above. Everything below this
 > notice is upstream's own README, kept for reference.
 >
