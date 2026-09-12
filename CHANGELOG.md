@@ -4,6 +4,26 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.6 — upstream base `8.4.0`
+
+Fix/redesign, after testing `8.4.0+fork.5`'s reminder time entry: both the modal's plain time input and
+the flatpickr click-editor were "really ugly" — this codebase has zero theming CSS for flatpickr, so it
+never picked up Obsidian's look. Dropped flatpickr for reminder entirely in favour of native
+Obsidian/browser primitives, which theme automatically:
+
+- The right-click (and now also click) menu is built from **configurable** settings rather than a fixed
+  list: `Preset reminder times` (default `09:00, 12:00, 15:00, 18:00`), `Relative reminder offsets`
+  (default `30m, 1h, 2h, 4h`, shown as "In 30 minutes"/etc., computed fresh from the current time each time
+  the menu opens), and a rounding increment (15/30/60 min, default 30) so a relative pick lands on a clean
+  time.
+- A relative pick that crosses midnight (e.g. "in 30 minutes" at 23:45) now shifts the task's anchor date
+  (due, else scheduled, else start) forward by a day too, not just the time. A task with no anchor date at
+  all is left without one — a relative reminder never creates a due date from nothing.
+- The edit modal's Reminder field now matches every other date field's own look: a text input accepting
+  either a clock time or a relative phrase, paired with a small native time-input preview.
+- A new "Custom time…" menu item (a plain one-field dialog) replaces flatpickr as the exact-value escape
+  hatch when none of the configured quick options fit.
+
 ## 8.4.0+fork.5 — upstream base `8.4.0`
 
 Roadmap feature: **reminder field**. A distinct `⏰ HH:mm` signifier (paired with a task's due,
