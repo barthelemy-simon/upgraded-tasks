@@ -5,12 +5,63 @@ developed to add features the upstream maintainers won't take on. This folder li
 test vault's plugin directory (`.obsidian/plugins/upgraded-tasks`), so a build in place is a build that's live.
 
 - Fork: <https://github.com/barthelemy-simon/upgraded-tasks>
-- `origin` = this fork, `upstream` = obsidian-tasks-group/obsidian-tasks (added so upstream changes can be
-  pulled/rebased in later).
+- `origin` = this fork, `upstream` = obsidian-tasks-group/obsidian-tasks (added so upstream releases can be
+  merged in later — see "Staying in sync with upstream" below, this is a priority, not a someday-maybe).
 - Plugin id was changed from `obsidian-tasks-plugin` to `upgraded-tasks` (see `manifest.json`) so it can't be
   confused with, or conflict with, a real Tasks install. It's enabled in this vault's
   `.obsidian/community-plugins.json` under that id.
 - Test vault: `Test Task upgraded` (the folder two levels up from here).
+
+## Staying in sync with upstream
+
+**Being able to pull in upstream releases is a priority for this fork, not an afterthought.** The whole
+point of forking rather than writing a standalone plugin is to keep getting obsidian-tasks' upstream bug
+fixes and new features for free, and to only carry the small set of fork-specific additions (reminder field,
+postpone button, tabular view) on top of that. If a sync ever becomes too painful to do because the fork has
+drifted too far from upstream, that's a signal to shrink the fork's footprint (push logic upstream, or make
+the local change smaller/more isolated), not a reason to stop syncing.
+
+**How a sync actually happens:**
+
+```bash
+git fetch upstream
+git merge upstream/main        # merge, not rebase
+```
+
+- **Merge, don't rebase.** `main`'s history here is already merge-commit-based (PRs from `origin` are
+  merged in, not squashed or rebased — see the commit log), so merging upstream in keeps that consistent and
+  never rewrites commits already pushed to `origin`. (This is the same reasoning behind not rebasing the
+  stale PR #2750 referenced below — rebasing history that's already shared is the wrong tool here.)
+- **A merge takes everything from upstream and only forces a decision on what actually conflicts.** Any file
+  upstream touched that this fork hasn't will merge cleanly with no action needed. Conflicts only come up on
+  the files this fork has modified — expect them mainly in:
+  - `manifest.json` / `package.json` — `id`, `name`, `author*`, `fundingUrl`, `helpUrl`, `description` are
+    fork-specific and always win over upstream's values on conflict; take upstream's side for everything else
+    in those files (e.g. a `minAppVersion` bump, dependency version bumps).
+  - Whichever files the roadmap features below end up touching (`TaskLineRenderer.ts`, `Task.ts`,
+    `EditTask.svelte`, `Recurrence.ts`, etc.) — resolve by combining both sides' logic, never by picking one
+    side wholesale.
+  - This `CLAUDE.md`.
+- **Never resolve a conflict by discarding a fork-specific change.** If making a conflict go away would mean
+  losing an already-implemented fork feature, that means the merge needs manual reconciliation of both sides'
+  logic — not a `--theirs`/`--ours` shortcut.
+- After a clean merge: `yarn build`, reload the plugin in Obsidian, and confirm the fork-specific features
+  still work before committing/pushing the merge commit.
+- Bump the version per the scheme below as part of the same sync.
+
+## Versioning
+
+Version string format: `<upstream-version>+fork.<N>` (e.g. `8.4.0+fork.1`, `8.4.0+fork.2`, then
+`8.5.0+fork.1` after the next upstream sync). Used in both `manifest.json` and `package.json`.
+
+- This is semver **build metadata** (the `+` suffix), not a pre-release suffix. A pre-release (`-` suffix,
+  e.g. `8.4.0-0.0.1`) sorts *lower* than the plain version in real semver — which would misdescribe this fork
+  as an unfinished beta of vanilla 8.4.0, when it's actually 8.4.0 plus additional features. Build metadata
+  doesn't affect precedence and reads correctly: "upstream 8.4.0, fork build 1."
+- `N` increments for a fork-only change (no new upstream commits pulled in) and resets to `1` the next time
+  upstream is synced to a new base version.
+- Keep a `CHANGELOG.md` mapping each fork version to the upstream tag/commit it's synced to and the
+  fork-specific changes on top — the version string alone doesn't carry the "what changed" detail.
 
 ## Roadmap (see conversation history for full research)
 
