@@ -4,6 +4,28 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.5 — upstream base `8.4.0`
+
+Roadmap feature: **reminder field**. A distinct `⏰ HH:mm` signifier (paired with a task's due,
+scheduled or start date - whichever is present, in that priority order) that
+[obsidian-reminder](https://github.com/uphy/obsidian-reminder) already understands; the gap this closes is
+purely that Tasks' own modal and rendering had no way to enter, see, or query it.
+
+- **Modal**: a "Reminder" field in the task edit modal (access key `K` — none of R/E/M/I/N/D, the letters
+  in "reminder", were free).
+- **File format**: `⏰ 09:00` (emoji format) / `reminder:: 09:00` (Dataview format).
+- **Rendered line**: shows as `⏰ 09:00`; click to open a time picker, right-click for a menu of preset
+  times plus "Remove reminder" — the same interaction pattern as the other date fields, but its own
+  time-only picker/menu rather than the calendar-date ones (a reminder has no date of its own).
+- **Recurrence and completion**: the reminder time is carried forward unchanged across both — this was
+  the exact bug flagged against the stale prior-art PR referenced in `CLAUDE.md`'s roadmap.
+- **Queries**: `has reminder` / `no reminder`, `reminder before|after|on HH:mm`, `sort by reminder`,
+  `group by reminder`. A task's reminder also contributes to `happens` searches (the other gap that PR
+  left open), though since a reminder always shares its anchor date's day, this doesn't change which
+  *day* a `happens` search matches.
+- **Autocomplete**: typing in the description offers a `⏰`/`reminder::` suggestion, alongside the other
+  simple fields.
+
 ## 8.4.0+fork.4 — upstream base `8.4.0`
 
 Fix: day-based postpone increments (the button and its "N days" menu items) now count **business

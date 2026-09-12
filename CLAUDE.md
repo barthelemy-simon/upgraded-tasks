@@ -71,17 +71,15 @@ Version string format: `<upstream-version>+fork.<N>` (e.g. `8.4.0+fork.1`, `8.4.
 
 ## Roadmap (see conversation history for full research)
 
-1. **Reminder field in the task modal.** Reminder (obsidian-reminder) already understands a distinct
-   `⏰ HH:MM` signifier alongside Tasks' own date fields — no changes needed on the Reminder side. The gap is
-   purely that Tasks' modal has no field to enter it. There's stale prior art for this:
-   [PR #2750](https://github.com/obsidian-tasks-group/obsidian-tasks/pull/2750) (draft, last synced May 2024,
-   ~6,000 commits behind current upstream `main` — do not try to rebase it). Its actual `src/` diff was small
-   (~214 lines across 20 files: `Task.ts`, `DefaultTaskSerializer.ts`/`DataviewTaskSerializer.ts`,
-   `Recurrence.ts`, `EditTask.svelte` + `EditTaskHelpers.ts`, `TaskLineRenderer.ts`/`TaskFieldRenderer.ts`,
-   `Sort.ts`/`FilterParser.ts`/`Query.ts`, new `Query/Filter/ReminderDateField.ts`) — use it as a design
-   reference and reimplement against current `main`, not as a branch to merge. Known edge cases the PR's
-   reviewer flagged: reminder time gets lost when a task is completed or recurs, the `happens` filter doesn't
-   see reminder dates, and a keyboard access-key clash (`C` is taken by Created Date).
+1. ~~**Reminder field in the task modal.**~~ **Done**, full scope (on branch `feature/reminder-field`,
+   not yet merged — see CHANGELOG.md's `8.4.0+fork.5` entry for the exact feature list). Reimplemented from
+   scratch against current `main`, not from the stale prior-art PR #2750 the roadmap used to point to
+   (draft, last synced May 2024, ~6,000 commits behind `main` at the time — still worth reading as design
+   reference if this area is revisited, but do not try to rebase it). Its reviewer's two flagged edge cases
+   are both explicitly fixed/covered: reminder time now survives completion/recurrence (Task.ts's generic
+   spread-recovery mechanism carries it forward automatically, the same way priority/tags already are, so
+   there was no special-case code needed — it just had to not be reset), and `happens` now includes it.
+   The access-key clash is avoided too: `K`, not `C` (Created Date's).
 2. ~~**Postpone (⏩) to next business day.**~~ **Done** (merged into `main`). Behind a setting
    (`postponeSkipWeekends`, default off) in `src/Config/Settings.ts`/`SettingsTab.ts` — remember this file has
    **two** parallel settings UIs that both need updating (see the note above). The actual date math is
