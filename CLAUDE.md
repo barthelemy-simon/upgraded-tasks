@@ -81,21 +81,25 @@ Version string format: `<upstream-version>+fork.<N>` (e.g. `8.4.0+fork.1`, `8.4.
    there was no special-case code needed — it just had to not be reset), and `happens` now includes it.
    The access-key clash is avoided too: `K`, not `C` (Created Date's).
 
-   **Important correction, found by testing against the actual Reminder plugin (`8.4.0+fork.12`):** the
-   original roadmap research's assumption that Reminder "already understands a distinct `⏰ HH:MM` signifier
-   ... no changes needed on the Reminder side" was **wrong** — reverse-engineering Reminder's own bundled
-   `main.js` (its "Tasks plugin format" reader) showed it needs a *full date* (optionally with a time) under
-   `⏰`, exactly like it does for `📅`/`⏳`/`🛫`; a bare `HH:mm` fails to parse and the *entire line* is then
-   silently not recognised as a reminder at all (Reminder tries `⏰` first, before falling back to the other
-   three, per its own "Fall back to due, scheduled, or start date" setting). Fixed by writing `⏰ YYYY-MM-DD
-   HH:mm` (the anchor date plus the time) instead — see `symbolAndReminderTimeValue` in
-   `DefaultTaskSerializer.ts` — while still reading a bare `HH:mm` for backward compatibility with tasks an
-   earlier fork version already wrote. The *rendered* line still shows just the bare time (the date's
-   already visible via the anchor field right beside it) — see `TaskLineRenderer.ts`'s override of that one
-   component's rendered text. This also meant every reminder-setting path now guarantees an anchor date
-   exists (creating today's `scheduledDate` if the task has none at all) — see `SetReminderTime`'s doc
-   comment in `ReminderInstructions.ts` — since a reminder time with nowhere to attach it is exactly the
-   state Reminder can't recognise.
+   **Important correction, found by testing against the actual Reminder plugin (`8.4.0+fork.12`), then
+   reverted (`8.4.0+fork.13`):** the original roadmap research's assumption that Reminder "already
+   understands a distinct `⏰ HH:MM` signifier ... no changes needed on the Reminder side" was **wrong** in
+   two separate ways, neither fixable from this fork's side alone. First: Reminder's "Tasks plugin format"
+   reader needs a *full date* under `⏰` (like it does for `📅`/`⏳`/`🛫`) — a bare `HH:mm` isn't understood,
+   and since `⏰` is checked before falling back to the other three (per Reminder's own "Fall back to due,
+   scheduled, or start date" setting), that silently made the *entire line* not a reminder, no matter what
+   date fields it had. `fork.12` fixed this by writing `⏰ YYYY-MM-DD HH:mm` instead. Second, found after
+   that fix, with the fallback setting turned off as Reminder's own docs suggest for "only some tasks ring":
+   Reminder's validity check in that mode is hardcoded to require a literal `📅` due date — regardless of
+   whether `⏰` itself is present and valid, and regardless of using `⏳`/`🛫` — so it's fundamentally
+   incompatible with a one-scheduled-date-per-task workflow. There is no configuration of Reminder that
+   gives "one date field, opt-in per-task alarm." Decided: stop targeting Reminder-plugin compatibility
+   entirely; `fork.13` reverted the `⏰ YYYY-MM-DD HH:mm` format back to plain `⏰ HH:mm`. The one part that
+   *stayed* from `fork.12` is independently useful regardless of Reminder: every reminder-setting path
+   still guarantees an anchor date exists (creating today's `scheduledDate` if the task has none at all) —
+   see `SetReminderTime`'s doc comment in `ReminderInstructions.ts` — since a reminder time is meaningless
+   without a day to attach it to, and the native notification system below will need to know "which day"
+   exactly as much as Reminder would have.
 2. ~~**Postpone (⏩) to next business day.**~~ **Done** (merged into `main`). Behind a setting
    (`postponeSkipWeekends`, default off) in `src/Config/Settings.ts`/`SettingsTab.ts` — remember this file has
    **two** parallel settings UIs that both need updating (see the note above). The actual date math is
@@ -145,6 +149,20 @@ Version string format: `<upstream-version>+fork.<N>` (e.g. `8.4.0+fork.1`, `8.4.
    │           │ Task C.3                        │
    └───────────┴─────────────────────────────────┘
    ```
+
+4. **Native notification delivery** (planned next, not yet started). Fire notifications directly from this
+   plugin for tasks with a `reminderTime` set, instead of depending on the separate Reminder plugin (see the
+   correction under item 1 for why that path is a dead end for this fork's workflow). Key constraint already
+   surfaced: Obsidian mobile gives a pure JS/TS community plugin no way to fire a notification once the app
+   is closed/backgrounded — this is a platform limitation, not something more code can fix. Reminder itself
+   works around it via an external push relay (`ntfy.sh`, visible in its own settings as
+   `ntfyEnabled`/`ntfyServerUrl`/`ntfyTopic`/`ntfyAccessToken`) plus ntfy's own separate mobile app
+   subscribed to a topic — the user has confirmed they want true background delivery on mobile, so this
+   feature's design will need the same shape. Desktop notifications and foreground-only mobile notifications
+   are the easy part (Obsidian's `Notice`, or Electron's `Notification` API on desktop); no existing
+   scheduling loop, networking code, or `Platform` usage exists anywhere in this codebase yet, so the
+   check-and-fire loop and the relay client are both new subsystems. Full design deferred to when this work
+   actually starts.
 
 ## Build
 

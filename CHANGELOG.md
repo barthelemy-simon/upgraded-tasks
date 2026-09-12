@@ -4,6 +4,30 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.13 — upstream base `8.4.0`
+
+Revert of `8.4.0+fork.12`'s Reminder-plugin-format changes, after further testing found a *second*,
+independent incompatibility: with Reminder's "Fall back to due, scheduled, or start date" setting turned
+off (as recommended in that same entry, to get "only some tasks ring"), Reminder's validity check is
+hardcoded to require a literal `📅` due date — regardless of whether `⏰` itself is present and valid, and
+regardless of using `⏳`/`🛫` instead. Combined with `fork.12`'s own finding (that setting turned *on* rings
+on every scheduled/due task, not just the ones with `⏰`), there is no configuration of the Reminder plugin
+that supports "one scheduled date per task, opt-in alarm on some of them."
+
+Decision: stop targeting Reminder-plugin compatibility entirely, and build notification delivery natively
+into this fork instead (see `CLAUDE.md`'s roadmap item 4 — not started yet).
+
+Reverted:
+
+- `⏰` is back to a plain `HH:mm` (`DefaultTaskSerializer.ts`, `DataviewTaskSerializer.ts`) - no more
+  embedding the anchor date into it. The rendered-line override in `TaskLineRenderer.ts` that existed only
+  to hide that embedded date again is removed too, since there's nothing to hide once more.
+
+Kept, since it's independently useful (a future in-plugin notification scheduler will need to know "which
+day" exactly as much as Reminder would have): every reminder-setting path (menu presets, relative offsets,
+the modal field, "Custom time…") still guarantees an anchor date exists, creating today's `scheduledDate` if
+the task has none at all - see `SetReminderTime`/`SetReminderDateTime` in `ReminderInstructions.ts`.
+
 ## 8.4.0+fork.12 — upstream base `8.4.0`
 
 Major fix, reported after testing `8.4.0+fork.11` in a vault with the actual Reminder plugin installed:
