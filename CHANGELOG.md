@@ -4,6 +4,20 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.8 — upstream base `8.4.0`
+
+Bug fix, reported after testing `8.4.0+fork.7`: clicking a relative-offset item in the reminder menu (e.g.
+"In 30 minutes (11:00)") applied the *raw, unrounded* offset (11:00's underlying 10:37) instead of the
+rounded time the label promised. Introduced when `ReminderSuggestions.ts` was extracted: the menu re-parsed
+the item's raw value (`'in 30 minutes'`) at click-time via `parseReminderTimeInput`, which re-resolves the
+offset from "now" and discards the rounding that only existed in the label text. Fixed by having
+`buildReminderSuggestions` carry the already-rounded date on each relative suggestion (`resolvedDate`), and
+having the menu apply that directly instead of re-parsing.
+
+Also added, per request: a "No rounding" option in Settings → Reminder → "Round relative offsets to",
+alongside 15/30/60 minutes. Selecting it applies each relative offset's exact, unrounded time (so "In 30
+minutes" always means exactly that), rather than snapping to a clean o'clock/half-past value.
+
 ## 8.4.0+fork.7 — upstream base `8.4.0`
 
 Enhancement, after testing `8.4.0+fork.6`: the edit modal's Reminder field now offers the same presets and
