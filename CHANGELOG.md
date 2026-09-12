@@ -4,6 +4,24 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 (`<upstream-version>+fork.<N>`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 8.4.0+fork.11 — upstream base `8.4.0`
+
+Two more fixes after testing `8.4.0+fork.10`:
+
+- Typing an abbreviated duration ("in 2 h") wasn't rounded the same way as its spelled-out form ("in 2
+  hours"), even though chrono itself parses both as the same relative offset: the internal regex that
+  decides "is this relative, and therefore roundable" only recognised `hours`/`hrs`, not the bare `h`
+  abbreviation, so it silently fell through as "not relative" and skipped rounding. `relativeDurationPattern`
+  in `ReminderTimeParser.ts` now recognises `h` too. (A bare `m` for minutes is deliberately not added:
+  chrono itself doesn't understand that abbreviation - `in 30 m` fails to parse at all - so there's nothing
+  to round there either.)
+- The rendered line's "Custom time…" prompt (`ReminderPromptModal`) didn't round a relative offset at all,
+  regardless of what was typed - it was calling the plain, always-exact parser rather than
+  `resolveTypedReminderTime`, unlike the edit modal's own field (fixed in `fork.10`). Switched it to use the
+  same shared, rounding-aware resolver, so "in 30 minutes" now means the same rounded time whether it's
+  typed in the edit modal, the "Custom time…" prompt, or picked from the menu. A plain clock time is still
+  always exact, everywhere.
+
 ## 8.4.0+fork.10 — upstream base `8.4.0`
 
 Two fixes after testing `8.4.0+fork.9`:
