@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { onDestroy } from 'svelte';
+    import { Component, MarkdownRenderer, type App } from 'obsidian';
     import type { Task } from '../Task/Task';
     import {
         NOTIFICATION_BUCKET_LABELS,
@@ -13,6 +15,51 @@
     export let groups: Record<NotificationBucket, Task[]>;
     export let onOpenTask: (task: Task) => void;
     export let taskSaver: TaskSaver = defaultTaskSaver;
+    export let app: App;
+
+    // A description can contain Markdown - wikilinks, tags, bold, etc. - but Svelte's plain {expr}
+    // interpolation only ever inserts an escaped text node, so it never resolves e.g. [[wikilinks]] the way
+    // the main task list view does (see TaskLineRenderer.obsidianMarkdownRenderer). Rendering it instead
+    // needs a real Obsidian Component per node, for MarkdownRenderer.render to attach internal-link click
+    // handlers to - same pattern QuickSearchTasksModal's suggestion rendering uses, tracked here and
+    // unloaded on destroy rather than reusing this view's own lifecycle, since a row's Component needs to go
+    // away when that row does, not only when the whole view closes.
+    const renderComponents: Component[] = [];
+    onDestroy(() => {
+        renderComponents.forEach((component) => component.unload());
+        renderComponents.length = 0;
+    });
+
+    function renderDescription(node: HTMLElement, task: Task) {
+        const component = new Component();
+        component.load();
+        renderComponents.push(component);
+
+        const render = (t: Task) => {
+            node.empty();
+            void MarkdownRenderer.render(app, t.descriptionWithoutTags, node, t.path, component).then(() => {
+                // Unwrap the p-tag MarkdownRenderer wraps its output in - see TaskLineRenderer.renderDescription
+                // for the same fix; left in place here it'd add unwanted paragraph margin inside this row.
+                const pElement = node.querySelector('p');
+                if (pElement !== null) {
+                    while (pElement.firstChild) {
+                        node.insertBefore(pElement.firstChild, pElement);
+                    }
+                    pElement.remove();
+                }
+            });
+        };
+        render(task);
+
+        return {
+            update: render,
+            destroy() {
+                component.unload();
+                const index = renderComponents.indexOf(component);
+                if (index !== -1) renderComponents.splice(index, 1);
+            },
+        };
+    }
 
     $: isEmpty = NOTIFICATION_BUCKET_ORDER.every((bucket) => groups[bucket].length === 0);
 
@@ -83,9 +130,10 @@
                                         class="tasks-notifications-open"
                                         on:click={() => onOpenTask(task)}
                                     >
-                                        <span class="tasks-notifications-description">
-                                            {task.descriptionWithoutTags}
-                                        </span>
+                                        <span
+                                            class="tasks-notifications-description"
+                                            use:renderDescription={task}
+                                        ></span>
                                         <span class="tasks-notifications-time">{@html formatReminderTime(task)}</span>
                                     </button>
                                     <button

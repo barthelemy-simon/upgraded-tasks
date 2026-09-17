@@ -55,6 +55,7 @@ export class NotificationsItemView extends ItemView {
             props: {
                 groups: this.computeGroups(),
                 onOpenTask: (task: Task) => void openTaskAtSourceLocation(task, this.app),
+                app: this.app,
             },
         });
 

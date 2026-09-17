@@ -316,6 +316,3 @@ Releases page afterward; either publish it there, or just download the three fil
 and hand them to testers directly without publishing anything.
 
 ## Other notes
-
-- Bugfix : In reminder notifications view, the wikilinks are not rendered...
-- Bugfix : When scheduled date gets added automatically (file name format), the reminder shows an error

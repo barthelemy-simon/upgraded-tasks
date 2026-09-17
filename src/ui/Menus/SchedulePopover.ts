@@ -1,6 +1,7 @@
 import { ButtonComponent } from 'obsidian';
 import { TASK_FORMATS } from '../../Config/Settings';
 import type { Task } from '../../Task/Task';
+import { DateFallback } from '../../DateTime/DateFallback';
 import type { TaskEditingInstruction } from '../EditInstructions/TaskEditingInstruction';
 import { RemoveReminderTime } from '../EditInstructions/ReminderInstructions';
 import { RemoveScheduledDateAndReminder, SetSchedule } from '../EditInstructions/ScheduleInstructions';
@@ -157,7 +158,10 @@ export class SchedulePopover {
     }
 
     private async applyAndClose(instruction: TaskEditingInstruction): Promise<void> {
-        const newTasks = instruction.apply(this.task);
+        // See the equivalent fix-up in TaskEditingMenu.getMenuItemCallback for why this is needed: SetSchedule
+        // can move scheduledDate onto a different day than a filename-inferred one, and without this the
+        // stale scheduledDateIsInferred flag would make the new date silently vanish on save.
+        const newTasks = DateFallback.removeInferredStatusIfNeeded(this.task, instruction.apply(this.task));
         await this.taskSaver(this.task, newTasks);
         this.close();
     }

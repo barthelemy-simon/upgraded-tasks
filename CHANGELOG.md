@@ -5,6 +5,31 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.3.1 — upstream base `8.4.0`
+
+**Three reminder rendering/serialization bug fixes.** PATCH: fixes only, no scope added.
+
+- Fixed wikilinks (and other Markdown — tags, bold, etc.) showing as literal text instead of being rendered
+  in the Reminder Notifications view: `NotificationsView.svelte` was interpolating each task's description as
+  plain escaped text rather than running it through Obsidian's `MarkdownRenderer`, unlike the main task list
+  view. Now renders it the same way (same per-row `Component` pattern `QuickSearchTasksModal`'s suggestion
+  rendering already used), unwrapping the wrapper `<p>` the renderer adds, the same fix `TaskLineRenderer`
+  already has for its own description rendering.
+- Fixed a task whose scheduled date is only ever inferred from the filename (`useFilenameAsScheduledDate`)
+  always showing its reminder as "orphaned"/non-firing in Reading View, even though the reminder resolved
+  correctly everywhere else (Notifications view, queries). `InlineRenderer.ts`'s Reading View post-processor
+  re-parses each task line independently for display and was hardcoding `fallbackDate: null` — true before
+  reminders existed, since skipping the fallback for a single line's *display* was harmless, but a reminder
+  needs a resolved `scheduledDate` to anchor to (see `Task.reminderDateTime`). Now threads the real fallback
+  date through, the same way `FileParser.ts`'s indexing (used everywhere else) already did.
+- Fixed a reminder edited via the right-click reminder menu or the Schedule popover, on a task whose
+  scheduled date is only ever filename-inferred, silently reverting to the wrong day (or losing its date
+  entirely) on save: `SetReminderDateTime`/`SetSchedule` could shift `scheduledDate` onto a new day while
+  leaving `scheduledDateIsInferred` stuck `true`, which makes `DefaultTaskSerializer` omit the scheduled-date
+  field entirely — so re-parsing just re-inferred the *original* day from the filename again.
+  `TaskEditingMenu.getMenuItemCallback` and `SchedulePopover.applyAndClose` now route their result through
+  `DateFallback.removeInferredStatusIfNeeded`, the same fix-up the main edit modal's save path already used.
+
 ## 4.3.0 — upstream base `8.4.0`
 
 **Schedule popover, Notifications view options, and a datalist text fix.** MINOR: three small additive UI
