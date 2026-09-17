@@ -1,6 +1,7 @@
 import { Menu, type MenuItem } from 'obsidian';
 import type { Task } from '../../Task/Task';
 import { replaceTaskWithTasks } from '../../Obsidian/File';
+import { DateFallback } from '../../DateTime/DateFallback';
 import type { TaskEditingInstruction } from '../EditInstructions/TaskEditingInstruction';
 import { SEPARATOR_INSTRUCTION_DISPLAY_NAME } from '../EditInstructions/MenuDividerInstruction';
 
@@ -73,7 +74,16 @@ export class TaskEditingMenu extends Menu {
         item.setTitle(instruction.instructionDisplayName())
             .setChecked(instruction.isCheckedForTask(task))
             .onClick(async () => {
-                const newTask = instruction.apply(task);
+                // Reconcile scheduledDateIsInferred here rather than in each instruction: an instruction
+                // that shifts scheduledDate onto a different calendar day (e.g. SetReminderDateTime picking
+                // a relative offset that crosses midnight) must not leave a filename-inferred date's flag
+                // set to true afterwards - the serializer omits the field entirely while it's true (see
+                // DefaultTaskSerializer), so the new date would never be written to the file, and re-parsing
+                // would just re-infer the *original* day from the filename again, silently discarding the
+                // edit. Same fix already applied to the main edit modal's save path (QueryRenderer.ts,
+                // Commands/CreateOrEdit.ts) - this is the equivalent for every instruction routed through
+                // this menu (reminder quick-picks, date pickers, etc).
+                const newTask = DateFallback.removeInferredStatusIfNeeded(task, instruction.apply(task));
                 const hasEdits = newTask.length !== 1 || !Object.is(newTask[0], task);
                 if (hasEdits) {
                     await this.taskSaver(task, newTask);

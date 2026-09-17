@@ -1,6 +1,7 @@
 import type { App, MarkdownPostProcessorContext, Plugin } from 'obsidian';
 import { MarkdownRenderChild } from 'obsidian';
 import { GlobalFilter } from '../Config/GlobalFilter';
+import { DateFallback } from '../DateTime/DateFallback';
 import { TaskLayoutOptions } from '../Layout/TaskLayoutOptions';
 import { QueryLayoutOptions } from '../Layout/QueryLayoutOptions';
 import { TasksFile } from '../Scripting/TasksFile';
@@ -92,6 +93,15 @@ export class InlineRenderer {
 
         const fileLines = section.text.split('\n');
 
+        // Unlike the preceding header (genuinely unneeded for in-line rendering), the fallback date DOES
+        // matter here: a task whose scheduledDate is only ever inferred from the filename (no explicit 📅
+        // field in the line) still needs it resolved for display, since a reminder can't render without an
+        // anchor scheduledDate (see Task.reminderDateTime) - without this, such a task would always show as
+        // an "orphaned"/non-firing reminder in Reading View alone, even though it resolves correctly
+        // everywhere else (FileParser.ts's own indexing, which the Notifications view and queries rely on,
+        // already threads the same fallback date through).
+        const fallbackDate = DateFallback.fromPath(path);
+
         let sectionIndex = 0;
         const fileTasks: Task[] = [];
         for (let lineNumber = section.lineStart; lineNumber <= section.lineEnd; lineNumber++) {
@@ -106,7 +116,7 @@ export class InlineRenderer {
             const task = Task.fromLine({
                 line,
                 taskLocation: new TaskLocation(tasksFile, lineNumber, section.lineStart, sectionIndex, precedingHeader),
-                fallbackDate: null, // We don't need the fallback date for in-line rendering
+                fallbackDate,
             });
             if (task !== null) {
                 fileTasks.push(task);
