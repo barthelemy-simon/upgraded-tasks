@@ -12,8 +12,7 @@ import { Task } from '../Task/Task';
 import { TaskRegularExpressions } from '../Task/TaskRegularExpressions';
 import { DateMenu } from '../ui/Menus/DateMenu';
 import { promptForDate } from '../ui/Menus/DatePicker';
-import { ReminderMenu } from '../ui/Menus/ReminderMenu';
-import { openScheduleEditor } from '../ui/Menus/ScheduleModal';
+import { ReminderMenu, onReminderPillClick } from '../ui/Menus/ReminderMenu';
 import { StatusMenu } from '../ui/Menus/StatusMenu';
 import { defaultTaskSaver, showMenu } from '../ui/Menus/TaskEditingMenu';
 import { TaskFieldRenderer } from './TaskFieldRenderer';
@@ -258,12 +257,11 @@ export class TaskLineRenderer {
                     );
                 } else if (component === TaskLayoutComponent.ReminderTime) {
                     // Not gated on Task.allDateFields(): a reminder is a time, not a date, so it gets its
-                    // own handlers, rather than the generic calendar-date ones above. Click opens the
-                    // standalone Schedule editor (the same text+pickers+remove-buttons form the edit modal's
-                    // own "Schedule" section is built from - a popover next to this pill on desktop, a modal
-                    // on mobile, see openScheduleEditor); right-click keeps the quick-pick ReminderMenu - unlike a date, there's
-                    // no calendar-grid equivalent for a time, but the two clicks now serve genuinely
-                    // different purposes (free-editing vs quick presets), so they diverge.
+                    // own handlers, rather than the generic calendar-date ones above. The two clicks serve
+                    // different purposes - free-editing in the standalone Schedule editor (the same form the
+                    // edit modal's own "Schedule" section is built from) vs the quick-pick ReminderMenu. On
+                    // desktop, click is the editor and right-click the menu; on mobile, click is the menu too,
+                    // with the editor one tap further, under "Custom reminder…" - see onReminderPillClick.
                     const isOrphaned = task.reminderTime !== null && task.scheduledDate === null;
                     if (isOrphaned) {
                         // A reminder with no scheduled date to anchor to (see Task.reminderDateTime) can
@@ -279,9 +277,7 @@ export class TaskLineRenderer {
                             : 'Click to edit reminder, Right-click for more options',
                     );
                     span.addEventListener('click', (ev: MouseEvent) => {
-                        ev.preventDefault();
-                        ev.stopPropagation();
-                        openScheduleEditor(span, task, defaultTaskSaver);
+                        onReminderPillClick(ev, span, task, defaultTaskSaver);
                     });
                     span.addEventListener('contextmenu', (ev: MouseEvent) => {
                         showMenu(ev, new ReminderMenu(task, defaultTaskSaver));

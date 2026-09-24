@@ -4,17 +4,24 @@
 
 import moment from 'moment/moment';
 
-import { ReminderMenu } from '../../../src/ui/Menus/ReminderMenu';
+import { Platform } from 'obsidian';
+import { ReminderMenu, onReminderPillClick } from '../../../src/ui/Menus/ReminderMenu';
+import { openScheduleEditor } from '../../../src/ui/Menus/ScheduleModal';
 import { resetSettings, updateSettings } from '../../../src/Config/Settings';
 import { TaskBuilder } from '../../TestingTools/TaskBuilder';
 import { TestableTaskSaver, menuToString } from './MenuTestingHelpers';
 
+jest.mock('../../../src/ui/Menus/ScheduleModal', () => ({ openScheduleEditor: jest.fn() }));
+
 window.moment = moment;
+
+const mockedOpenScheduleEditor = jest.mocked(openScheduleEditor);
 
 beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2023-12-03T10:07:00'));
     TestableTaskSaver.reset();
+    mockedOpenScheduleEditor.mockClear();
 });
 
 afterEach(() => {
@@ -40,6 +47,7 @@ describe('ReminderMenu', () => {
               Set reminder: 15:00
               Set reminder: 18:00
               ---
+              Custom reminder…
             x Remove reminder"
         `);
     });
@@ -83,6 +91,7 @@ describe('ReminderMenu', () => {
               Set reminder: 07:30
               Set reminder: 20:00
               ---
+              Custom reminder…
             x Remove reminder"
         `);
     });
@@ -217,5 +226,62 @@ describe('ReminderMenu', () => {
 
         expect(TestableTaskSaver.tasksBeingSaved!.length).toEqual(1);
         expect(TestableTaskSaver.tasksBeingSaved![0].reminderTime).toBeNull();
+    });
+
+    it('should open the full Schedule editor at the click when "Custom reminder…" is clicked', () => {
+        const task = new TaskBuilder().scheduledDate('2023-12-03').build();
+        const menu = new ReminderMenu(task, TestableTaskSaver.testableTaskSaver);
+
+        // @ts-expect-error TS2339: Property 'items' does not exist on type 'ReminderMenu'.
+        const items = menu.items;
+        const customItem = items[items.length - 2];
+        expect(customItem.title).toEqual('Custom reminder…');
+        customItem.callback(new MouseEvent('click', { clientX: 12, clientY: 34 }));
+
+        expect(mockedOpenScheduleEditor).toHaveBeenCalledWith(
+            { x: 12, y: 34 },
+            task,
+            TestableTaskSaver.testableTaskSaver,
+        );
+        expect(TestableTaskSaver.tasksBeingSaved).toBeUndefined();
+    });
+});
+
+describe('onReminderPillClick', () => {
+    const task = new TaskBuilder().scheduledDate('2023-12-03').reminderTime('09:00').build();
+    let pill: HTMLElement;
+    let shownMenus: unknown[];
+
+    beforeEach(() => {
+        pill = document.createElement('span');
+        shownMenus = [];
+        // The Menu mock has no showAtPosition - record which menus would have been shown instead.
+        (ReminderMenu.prototype as any).showAtPosition = function () {
+            shownMenus.push(this);
+        };
+    });
+
+    afterEach(() => {
+        Platform.isMobile = false;
+        delete (ReminderMenu.prototype as any).showAtPosition;
+    });
+
+    it('should open the full Schedule editor next to the pill on desktop', () => {
+        Platform.isMobile = false;
+
+        onReminderPillClick(new MouseEvent('click'), pill, task, TestableTaskSaver.testableTaskSaver);
+
+        expect(mockedOpenScheduleEditor).toHaveBeenCalledWith(pill, task, TestableTaskSaver.testableTaskSaver);
+        expect(shownMenus).toHaveLength(0);
+    });
+
+    it('should show the quick-pick reminder menu on mobile, not the full editor', () => {
+        Platform.isMobile = true;
+
+        onReminderPillClick(new MouseEvent('click'), pill, task, TestableTaskSaver.testableTaskSaver);
+
+        expect(shownMenus).toHaveLength(1);
+        expect(shownMenus[0]).toBeInstanceOf(ReminderMenu);
+        expect(mockedOpenScheduleEditor).not.toHaveBeenCalled();
     });
 });
