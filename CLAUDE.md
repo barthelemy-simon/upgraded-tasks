@@ -280,6 +280,11 @@ Rules:
    it doesn't have to be picked by hand every time) — the note's project presumably comes from its own
    frontmatter or folder location.
 
+6. **Reorderable task edit modal.** Not started. Let the user choose the order of the edit modal's fields
+   and sections (description, priority, dates, Schedule, status, dependencies...), rather than the fixed
+   upstream order. `EditTask.svelte` is upstream's file, so keep the fork's change to it small, e.g. a
+   settings-driven order applied to otherwise-unchanged sections, to limit merge conflicts on upstream syncs.
+
 ## Parked ideas
 
 Not on the roadmap yet; to come back to later.

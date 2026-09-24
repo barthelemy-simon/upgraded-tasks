@@ -12,6 +12,8 @@ import { type TaskSaver, defaultTaskSaver } from './TaskEditingMenu';
  * Cancel, Apply, the close button and tapping outside all close it; only Apply (or one of the remove
  * buttons) saves - the usual meaning of dismissing a modal, unlike the popover, where a click outside
  * applies. The text input isn't focused on open, so the on-screen keyboard only comes up once it's tapped.
+ * While it's up, the modal moves to the top of the screen, with Cancel/Apply kept in view (see
+ * ScheduleModal.scss).
  */
 export class ScheduleModal extends Modal {
     private form: ScheduleForm | undefined;
@@ -24,9 +26,26 @@ export class ScheduleModal extends Modal {
         this.titleEl.setText('Schedule');
         this.modalEl.addClass('tasks-schedule-modal');
         this.form = new ScheduleForm(this.contentEl, this.task, this.taskSaver, () => this.close());
+
+        this.trackVisibleArea();
+        window.visualViewport?.addEventListener('resize', this.trackVisibleArea);
+        window.visualViewport?.addEventListener('scroll', this.trackVisibleArea);
     }
 
+    /** Publishes the part of the screen the on-screen keyboard leaves visible, for ScheduleModal.scss to fit
+     *  the modal into while the keyboard is up. */
+    private trackVisibleArea = (): void => {
+        const viewport = window.visualViewport;
+        if (!viewport) {
+            return;
+        }
+        this.containerEl.style.setProperty('--tasks-visible-top', `${viewport.offsetTop}px`);
+        this.containerEl.style.setProperty('--tasks-visible-height', `${viewport.height}px`);
+    };
+
     onClose(): void {
+        window.visualViewport?.removeEventListener('resize', this.trackVisibleArea);
+        window.visualViewport?.removeEventListener('scroll', this.trackVisibleArea);
         this.form?.destroy();
         this.form = undefined;
         this.contentEl.empty();

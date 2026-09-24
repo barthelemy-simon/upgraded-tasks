@@ -65,11 +65,18 @@ export class ScheduleForm {
         });
 
         const buttonRow = this.containerEl.createDiv({ cls: 'tasks-schedule-popover-buttons' });
-        new ButtonComponent(buttonRow).setButtonText('Cancel').onClick(() => this.cancel());
-        new ButtonComponent(buttonRow)
+        const cancel = new ButtonComponent(buttonRow).setButtonText('Cancel').onClick(() => this.cancel());
+        const apply = new ButtonComponent(buttonRow)
             .setButtonText('Apply')
             .setCta()
             .onClick(() => void this.apply());
+        // Keep focus in the text input while these are tapped - same fix, for the same reason, as the edit
+        // modal's own buttons (see the comment above .tasks-modal-button-section in EditTask.svelte): on
+        // mobile, blurring the input mid-tap drops the keyboard, ScheduleModal.scss moves the modal back to
+        // the middle of the screen, and the tap then lands on whatever is under the finger instead.
+        for (const button of [cancel, apply]) {
+            button.buttonEl.addEventListener('mousedown', (ev) => ev.preventDefault());
+        }
 
         this.containerEl.addEventListener('keydown', (ev: KeyboardEvent) => {
             if (ev.key === 'Enter') {
