@@ -5,6 +5,17 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.4.3 — upstream base `8.4.0`
+
+**Schedule popover no longer flickers away on mobile.** PATCH: fix only, no scope added.
+
+- Opening the Schedule popover on mobile, from the Notifications view's ⏰ pill or a reminder in Reading
+  view, made it flash up and vanish. It closed itself on any window `scroll`/`resize`, and it focused its
+  text input on open, which on mobile brings up the on-screen keyboard: that resizes the viewport and
+  scrolls the input into view, closing the popover straight away. On mobile it now stays open through
+  those events (moving itself back on-screen on resize), and only focuses the input when it's tapped.
+  Desktop keeps closing on scroll/resize, except for scrolling inside the popover itself.
+
 ## 4.4.2 — upstream base `8.4.0`
 
 **No "rounding" wording when reminder rounding is off.** PATCH: fixes only, no scope added.
