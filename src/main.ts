@@ -26,11 +26,16 @@ import { ReminderCheckLoop } from './Notifications/NotificationScheduler';
 import { notifyMissedReminders, notifyRemindersDue } from './Notifications/ReminderNotifier';
 import { groupTasksByBucket } from './Notifications/NotificationBuckets';
 import { NOTIFICATIONS_VIEW_TYPE, NotificationsItemView } from './Obsidian/NotificationsItemView';
+import { type NtfyConfig, NtfyReminderSync } from './Notifications/NtfyReminderSync';
+
+/** The `obsidian://` action that opens the notifications view - used as ntfy pushes' click target. */
+const OPEN_NOTIFICATIONS_PROTOCOL_ACTION = 'upgraded-tasks-notifications';
 
 export default class TasksPlugin extends Plugin {
     private cache: Cache | undefined;
     public inlineRenderer: InlineRenderer | undefined;
     public queryRenderer: QueryRenderer | undefined;
+    private ntfySync: NtfyReminderSync | undefined;
 
     get apiV1() {
         return tasksApiV1(this);
@@ -82,6 +87,9 @@ export default class TasksPlugin extends Plugin {
 
         this.registerView(NOTIFICATIONS_VIEW_TYPE, (leaf) => new NotificationsItemView(leaf, this, events));
         this.addRibbonIcon('bell', 'Open reminder notifications', () => void this.openNotificationsView());
+        this.registerObsidianProtocolHandler(OPEN_NOTIFICATIONS_PROTOCOL_ACTION, () => {
+            void this.openNotificationsView();
+        });
 
         // Update types.json.
         this.setObsidianPropertiesTypes();
@@ -95,6 +103,7 @@ export default class TasksPlugin extends Plugin {
         const startupMoment = window.moment();
         this.registerReminderNotifications(startupMoment);
         this.checkForMissedRemindersOnStartup(events, startupMoment);
+        this.registerNtfySync();
     }
 
     /**
@@ -142,6 +151,47 @@ export default class TasksPlugin extends Plugin {
                 }
             }, getSettings().notificationCheckIntervalSeconds * 1000),
         );
+    }
+
+    /**
+     * Registers the periodic ntfy sync (see `Notifications/NtfyReminderSync.ts`), which schedules reminders
+     * with an ntfy server so they're pushed to a phone even while Obsidian is closed. Shares the foreground
+     * check's interval, and is likewise registered unconditionally: with `ntfyEnabled` off, a sync only
+     * cancels anything still pending from before it was turned off.
+     *
+     * Skipped until the cache is `Warm` - a sync treats a reminder missing from the task list as removed and
+     * cancels it, so running against a half-indexed vault would cancel reminders that still exist.
+     */
+    private registerNtfySync() {
+        const ntfySync = new NtfyReminderSync(new ObsidianLocalStorageProvider(this.app));
+        this.ntfySync = ntfySync;
+        this.registerInterval(
+            window.setInterval(() => {
+                if (this.getState() !== State.Warm) {
+                    return;
+                }
+                void ntfySync.sync(this.getTasks(), window.moment(), this.ntfyConfig());
+            }, getSettings().notificationCheckIntervalSeconds * 1000),
+        );
+    }
+
+    private ntfyConfig(): NtfyConfig {
+        const settings = getSettings();
+        const vaultName = this.app.vault.getName();
+        return {
+            enabled: settings.ntfyEnabled,
+            serverUrl: settings.ntfyServerUrl,
+            topic: settings.ntfyTopic,
+            accessToken: settings.ntfyAccessToken,
+            includeTaskText: settings.ntfyIncludeTaskText,
+            vaultName,
+            clickUrl: `obsidian://${OPEN_NOTIFICATIONS_PROTOCOL_ACTION}?vault=${encodeURIComponent(vaultName)}`,
+        };
+    }
+
+    /** Sends an immediate ntfy message, for the settings tab's "Send test notification" button. Throws on failure. */
+    public async sendNtfyTestNotification(): Promise<void> {
+        await this.ntfySync?.sendTest(this.ntfyConfig());
     }
 
     /**

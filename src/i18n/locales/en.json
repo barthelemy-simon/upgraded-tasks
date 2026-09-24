@@ -236,6 +236,37 @@
       "checkIntervalSeconds": {
         "description": "How often, in seconds, to check for due reminders.",
         "name": "Check every (seconds)"
+      },
+      "ntfy": {
+        "heading": "Push notifications (ntfy)",
+        "enabled": {
+          "description": "Schedules each reminder with an ntfy server, which pushes it to the ntfy app on your phone at the right time, even while Obsidian is closed. Reminders are scheduled up to 3 days ahead, whenever Obsidian is running on any of your devices: a reminder further out only gets scheduled if Obsidian runs again before then. Install the ntfy app and subscribe it to the topic below.",
+          "name": "Enable push notifications"
+        },
+        "serverUrl": {
+          "description": "The ntfy server to use. The public ntfy.sh server is free, but allows 250 messages a day.",
+          "name": "Server URL"
+        },
+        "topic": {
+          "description": "The topic to publish to, and to subscribe to in the ntfy app. On a public server, anyone who knows the topic name can read its messages: pick something long and hard to guess.",
+          "name": "Topic"
+        },
+        "accessToken": {
+          "description": "Optional. An ntfy access token (starting with tk_), for a protected topic or a self-hosted server with access control. Stored in plain text in this plugin's data.json.",
+          "name": "Access token"
+        },
+        "includeTaskText": {
+          "description": "Include the task text in push notifications. Turn off to only send how many reminders are due, so no task content passes through the ntfy server.",
+          "name": "Include task text"
+        },
+        "test": {
+          "button": "Send test",
+          "description": "Sends a notification right away, to check that the ntfy app receives it.",
+          "failure": "ntfy test notification failed: {{error}}",
+          "name": "Send test notification",
+          "noTopic": "Set a topic first.",
+          "success": "Test notification sent."
+        }
       }
     },
     "postponing": {

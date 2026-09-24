@@ -229,6 +229,7 @@ export class SettingsTab extends PluginSettingTab {
             this.postponingGroup(),
             this.reminderGroup(),
             this.notificationsGroup(),
+            this.ntfyGroup(),
             this.taskEntryGroup(),
         ];
     }
@@ -1088,6 +1089,97 @@ export class SettingsTab extends PluginSettingTab {
         };
     }
 
+    // ---- Push notifications (ntfy) ----------------------------------------
+
+    /**
+     * The ntfy settings, defined once and rendered by both settings UIs - {@link ntfyGroup} for
+     * `getSettingDefinitions()` and a loop in `display()` - so the two can't drift apart.
+     */
+    private ntfySettingItems(): { name: string; desc: string; render: (setting: Setting) => void }[] {
+        const textSetting = (key: 'ntfyServerUrl' | 'ntfyTopic' | 'ntfyAccessToken', placeholder: string) => {
+            return (setting: Setting) => {
+                setting.addText((text) => {
+                    text.setPlaceholder(placeholder)
+                        .setValue(getSettings()[key])
+                        .onChange(async (value) => {
+                            updateSettings({ [key]: value.trim() });
+                            await this.plugin.saveSettings();
+                        });
+                });
+            };
+        };
+        const toggleSetting = (key: 'ntfyEnabled' | 'ntfyIncludeTaskText') => {
+            return (setting: Setting) => {
+                setting.addToggle((toggle) => {
+                    toggle.setValue(getSettings()[key]).onChange(async (value) => {
+                        updateSettings({ [key]: value });
+                        await this.plugin.saveSettings();
+                    });
+                });
+            };
+        };
+        return [
+            {
+                name: i18n.t('settings.notifications.ntfy.enabled.name'),
+                desc: i18n.t('settings.notifications.ntfy.enabled.description'),
+                render: toggleSetting('ntfyEnabled'),
+            },
+            {
+                name: i18n.t('settings.notifications.ntfy.serverUrl.name'),
+                desc: i18n.t('settings.notifications.ntfy.serverUrl.description'),
+                render: textSetting('ntfyServerUrl', 'https://ntfy.sh'),
+            },
+            {
+                name: i18n.t('settings.notifications.ntfy.topic.name'),
+                desc: i18n.t('settings.notifications.ntfy.topic.description'),
+                render: textSetting('ntfyTopic', 'my-long-hard-to-guess-topic'),
+            },
+            {
+                name: i18n.t('settings.notifications.ntfy.accessToken.name'),
+                desc: i18n.t('settings.notifications.ntfy.accessToken.description'),
+                render: textSetting('ntfyAccessToken', 'tk_...'),
+            },
+            {
+                name: i18n.t('settings.notifications.ntfy.includeTaskText.name'),
+                desc: i18n.t('settings.notifications.ntfy.includeTaskText.description'),
+                render: toggleSetting('ntfyIncludeTaskText'),
+            },
+            {
+                name: i18n.t('settings.notifications.ntfy.test.name'),
+                desc: i18n.t('settings.notifications.ntfy.test.description'),
+                render: (setting) => {
+                    setting.addButton((button) => {
+                        button.setButtonText(i18n.t('settings.notifications.ntfy.test.button')).onClick(async () => {
+                            if (getSettings().ntfyTopic === '') {
+                                new Notice(i18n.t('settings.notifications.ntfy.test.noTopic'));
+                                return;
+                            }
+                            try {
+                                await this.plugin.sendNtfyTestNotification();
+                                new Notice(i18n.t('settings.notifications.ntfy.test.success'));
+                            } catch (error) {
+                                new Notice(
+                                    i18n.t('settings.notifications.ntfy.test.failure', { error: String(error) }),
+                                );
+                            }
+                        });
+                    });
+                },
+            },
+        ];
+    }
+
+    private ntfyGroup(): SettingDefinitionItem {
+        const items = this.ntfySettingItems();
+        return {
+            type: 'group',
+            heading: i18n.t('settings.notifications.ntfy.heading'),
+            items: items.map((item, index) =>
+                index === 0 ? { ...item, aliases: [i18n.t('settings.notifications.ntfy.heading'), 'ntfy'] } : item,
+            ),
+        };
+    }
+
     // ---- Task entry (auto-suggest + dialog access keys) -------------------
 
     private taskEntryGroup(): SettingDefinitionItem {
@@ -1698,6 +1790,14 @@ export class SettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 });
             });
+
+        // ---------------------------------------------------------------------------
+        new Setting(containerEl).setName(i18n.t('settings.notifications.ntfy.heading')).setHeading();
+        // ---------------------------------------------------------------------------
+
+        for (const { name, desc, render } of this.ntfySettingItems()) {
+            render(new Setting(containerEl).setName(name).setDesc(desc));
+        }
 
         // ---------------------------------------------------------------------------
         new Setting(containerEl).setName(i18n.t('settings.autoSuggest.heading')).setHeading();
