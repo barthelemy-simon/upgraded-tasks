@@ -5,6 +5,27 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.4.0 — upstream base `8.4.0`
+
+**Push notifications via ntfy (roadmap item 4, Phase 2).** MINOR: completes more of an already-shipped
+roadmap item. No on-disk syntax change. Not yet tested on a real phone.
+
+- New "Push notifications (ntfy)" settings group (off by default): server URL (default `https://ntfy.sh`),
+  topic, optional access token, whether to include task text, and a "Send test notification" button.
+- While Obsidian runs on any device, reminders coming due in the next 3 days are scheduled on the ntfy
+  server with `X-Delay`. The server then pushes each one to the ntfy phone app at the right time, even if
+  Obsidian is closed by then. Reminders on the same instant are combined into one message, as with the
+  foreground notifications. Tapping a push opens the Notifications view via a new
+  `obsidian://upgraded-tasks-notifications` URI.
+- Only changes are sent (ntfy.sh allows 250 messages a day). Scheduled messages whose task is completed,
+  edited or removed, or whose reminder moved, are cancelled with `DELETE /<topic>/<sequence_id>`, so stale
+  pushes don't arrive. Turning the feature off, or changing the topic/server, cancels whatever is pending.
+- What each device has scheduled is kept in Obsidian's per-device local storage, not in the vault-synced
+  `data.json`. Sequence IDs are deterministic per vault and instant, so two devices converge on the same
+  messages.
+- `src/Notifications/NtfyScheduler.ts` (pure diff planning) and `src/Notifications/NtfyReminderSync.ts`
+  (HTTP via `requestUrl`, persistence, 5-minute backoff after a failure).
+
 ## 4.3.1 — upstream base `8.4.0`
 
 **Three reminder rendering/serialization bug fixes.** PATCH: fixes only, no scope added.

@@ -88,6 +88,11 @@ export interface Settings {
     reminderRoundingMode: 'floor' | 'round' | 'ceil';
     notificationsEnabled: boolean;
     notificationCheckIntervalSeconds: number;
+    ntfyEnabled: boolean;
+    ntfyServerUrl: string;
+    ntfyTopic: string;
+    ntfyAccessToken: string;
+    ntfyIncludeTaskText: boolean;
     searchResults: {
         taskCountLocation: 'top' | 'bottom';
     };
@@ -144,6 +149,11 @@ const defaultSettings: Readonly<Settings> = {
     reminderRoundingMode: 'ceil',
     notificationsEnabled: false,
     notificationCheckIntervalSeconds: 60,
+    ntfyEnabled: false,
+    ntfyServerUrl: 'https://ntfy.sh',
+    ntfyTopic: '',
+    ntfyAccessToken: '',
+    ntfyIncludeTaskText: true,
     searchResults: {
         taskCountLocation: 'bottom',
     },

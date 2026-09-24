@@ -247,21 +247,33 @@ Rules:
    startup summary is the proactive nudge that tells you it's there in the first place. Both exist because
    they solve different halves of "don't silently lose a reminder that fired while nobody was watching."
 
-   **Phase 2, not started**: true background delivery on mobile still needs an external push relay, the
-   same way the separate Reminder plugin does it via `ntfy.sh` (`ntfyEnabled`/`ntfyServerUrl`/`ntfyTopic`/
-   `ntfyAccessToken` in its own settings, plus ntfy's own separate mobile app subscribed to a topic) - this
-   is a platform limitation (Obsidian mobile gives a pure JS/TS plugin no way to run once the app is
-   closed/backgrounded), not something Phase 1's approach can ever close the gap on. The mechanism that
-   would make this actually work while Obsidian itself isn't running: ntfy's scheduled/delayed delivery (a
-   `Delay`/`X-Delay` header ntfy's own always-on server honours, so the *sending* client doesn't need to
-   still be running when the message fires) - **must be verified against ntfy's current docs before
-   implementing**, since it's the load-bearing assumption Phase 2 depends on. Calls should go through
-   Obsidian's `requestUrl` (explicitly documented as bypassing the renderer's CORS restrictions), not the
-   global `fetch`. Needs its own persisted idempotency state (which task+instant has already been scheduled
-   with ntfy, so re-scans don't push duplicate scheduled messages) - unlike Phase 1's window trick, this
-   can't avoid persistence, since "don't double-schedule" has to survive a restart. Known hard limitation to
-   document for users once built: ntfy's hosted/free tier has no cancel-a-scheduled-message API, so removing
-   or postponing a reminder shortly before it fires may still result in one stale push arriving.
+   **Phase 2: implemented** (`4.4.0`, not yet tested on a real phone). `src/Notifications/NtfyScheduler.ts`
+   (pure: which messages should be scheduled, diffed against what already is) +
+   `src/Notifications/NtfyReminderSync.ts` (HTTP through Obsidian's `requestUrl`, never the global `fetch`;
+   state in per-device local storage), driven by an interval in `main.ts` that only runs once the cache is
+   `Warm`. This is needed because a partial task list would read as "reminders removed" and cancel them.
+   Mobile needs an external push relay because Obsidian mobile gives a plugin no way to run once the app is
+   closed or backgrounded. The ntfy server holds each scheduled message (`X-Delay`) and delivers it to the
+   ntfy phone app on its own.
+
+   Verified against ntfy's docs **and the live ntfy.sh server** on 2026-09-24. Re-check these before
+   changing this code:
+   - `X-Delay: <unix timestamp>` works. The maximum is 3 days: 4 days is rejected with HTTP 400 "invalid
+     delay parameter: too large". The minimum is 10 s.
+   - **Cancelling a scheduled message works**: `DELETE /<topic>/<sequence_id>` returns 200, and the message
+     disappears from `?poll=1&sched=1`. It also returns 200 for an unknown ID, so it's idempotent. This
+     corrects the earlier assumption here that ntfy had no cancel API.
+   - **Re-publishing the same sequence ID does *not* replace a scheduled message on ntfy.sh**, even though
+     ntfy's docs on `main` say it does: both stayed queued. So an update is always cancel then publish.
+   - The sequence ID in the path must be `[A-Za-z0-9_-]`; `.` and `:` return 404.
+   - ntfy.sh allows 250 messages a day per visitor, and DELETEs are recorded as `message_delete` events. So
+     a sync only sends diffs, and backs off 5 minutes after a failure.
+
+   Known limitations: reminders more than 3 days out only get scheduled if Obsidian runs again on some
+   device before then. A cancel only happens once the device that notices the change runs a sync. Each
+   device only cancels what it scheduled itself, though deterministic sequence IDs mean either device's
+   DELETE removes both copies. The desktop gets both its own OS notification and the ntfy push; that
+   double delivery is intended, since ntfy is aimed at the phone.
 
 5. **Custom fields.** Not started. User-definable fields beyond the built-in ones, e.g. a "Project" field
    that links to another note, defaulting to the *current* note's own project when adding it to a task (so
