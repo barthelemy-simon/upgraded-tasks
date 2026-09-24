@@ -1,5 +1,6 @@
 import { Notice, Platform } from 'obsidian';
 import type { Task } from '../Task/Task';
+import { markdownToPlainText } from '../lib/MarkdownToPlainText';
 
 /** The default title for a "these just came due" notification - see {@link missedReminderTitle} for the
  *  other title this module builds. */
@@ -20,7 +21,8 @@ function missedReminderTitle(tasks: Task[]): string {
  * check (see {@link findDueReminders}/{@link ReminderCheckLoop} in `NotificationScheduler.ts`) - always
  * one notification per check, never one per task, even when several reminders land in the same window.
  * Body lines are built from {@link Task.descriptionWithoutTags} - the same 'clean-ish' rendering already
- * used for quick-search result display (see `src/lib/QuickSearchTasks.ts`).
+ * used for quick-search result display (see `src/lib/QuickSearchTasks.ts`) - reduced to plain text
+ * ({@link markdownToPlainText}).
  *
  * {@link title}, if given, overrides the default "N reminders due" wording - used by
  * {@link notifyMissedReminders} to say "came due while you were away" instead, for the same tasks/body
@@ -35,7 +37,7 @@ export function buildReminderNotificationContent(
 ): { title: string; body: string } {
     return {
         title,
-        body: tasks.map((task) => task.descriptionWithoutTags).join('\n'),
+        body: tasks.map((task) => markdownToPlainText(task.descriptionWithoutTags)).join('\n'),
     };
 }
 

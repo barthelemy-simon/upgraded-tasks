@@ -280,6 +280,18 @@ Rules:
    it doesn't have to be picked by hand every time) — the note's project presumably comes from its own
    frontmatter or folder location.
 
+## Parked ideas
+
+Not on the roadmap yet; to come back to later.
+
+- **Badge ("pastille") on the Obsidian app icon on mobile**, e.g. a count of overdue reminders, visible from
+  the phone's home screen. Parked 2026-09-24. Why it isn't simple: Obsidian's plugin API has no app-icon
+  badge call, and the web Badging API (`navigator.setAppBadge`) is for installed web apps, not a native app's
+  embedded WebView like Obsidian mobile's. Not yet checked: whether Obsidian mobile's Capacitor runtime
+  happens to expose a badge or local-notification plugin to plugin code (`window.Capacitor?.Plugins`),
+  which would be the only in-app route. Meanwhile the ntfy push (roadmap item 4, Phase 2) comes from the
+  ntfy app, so Android launchers may show a dot on *ntfy's* icon while a reminder is unread.
+
 ## Build
 
 Uses **Yarn** (there's a `yarn.lock`, no `package-lock.json` — `npm install` will fail with an ERESOLVE error

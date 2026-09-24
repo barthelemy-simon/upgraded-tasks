@@ -5,6 +5,17 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.4.1 — upstream base `8.4.0`
+
+**Notifications show task text without Markdown syntax.** PATCH: fix only, no scope added.
+
+- Reminder notifications (ntfy push, desktop OS notification and in-app notice) showed raw Markdown, such as
+  `[[People/John|John]]` or `**urgent**`. The body now shows what Obsidian displays: links and embeds show
+  their alias or target (`[[Note#Heading]]` → `Note > Heading`), `[text](url)` shows `text`, bold, italic,
+  strikethrough, highlight, inline code and HTML tags keep only their content, comments (`%%…%%`,
+  `<!-- … -->`) and footnote references are dropped, and backslash escapes show the escaped character.
+  Math is left as written. New `src/lib/MarkdownToPlainText.ts`.
+
 ## 4.4.0 — upstream base `8.4.0`
 
 **Push notifications via ntfy (roadmap item 4, Phase 2).** MINOR: completes more of an already-shipped

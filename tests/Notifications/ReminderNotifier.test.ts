@@ -47,6 +47,12 @@ describe('buildReminderNotificationContent', () => {
         });
     });
 
+    it('should show the body as plain text, without Markdown syntax', () => {
+        const task = new TaskBuilder().description('Call [[People/John Smith|John]] about **[[Project X]]**').build();
+
+        expect(buildReminderNotificationContent([task]).body).toEqual('Call John about Project X');
+    });
+
     it('should use a given title override instead of the default wording', () => {
         const task = new TaskBuilder().description('Buy milk').build();
 
