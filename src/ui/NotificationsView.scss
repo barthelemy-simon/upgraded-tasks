@@ -1,6 +1,6 @@
 .tasks-notifications-view {
-    // Capped and centred rather than stretching full-width - a row's description/time/pill are laid out
-    // with space between them (see .tasks-notifications-open below), so on a very wide window/pane an
+    // Capped and centred rather than stretching full-width - a row's description takes all the space the
+    // time/pill leave (see .tasks-notifications-open below), so on a very wide window/pane an
     // uncapped width would spread them uncomfortably far apart. Blank space on the sides instead.
     max-width: 40em;
     margin: 0 auto;
@@ -40,7 +40,7 @@
         padding: var(--size-4-1) 0;
     }
 
-    // height: auto - overriding Obsidian's own base `button` styling, which sets buttons to a fixed height
+    // The task text, which opens the task. height: auto - overriding Obsidian's own base `button` styling, which sets buttons to a fixed height
     // app-wide. Without this override that fixed height wins (this rule never otherwise declares `height`,
     // so there's nothing here to take precedence over it), clamping this button - which holds the wrapped,
     // potentially multi-line description - to a single line's worth of height regardless of how many lines
@@ -48,9 +48,10 @@
     // This is what a plain browser sandbox (no Obsidian theme CSS loaded) could never reproduce.
     .tasks-notifications-open {
         display: flex;
-        justify-content: space-between;
+        // Explicit: Obsidian's base `button` styling centres a button's content, which would centre a
+        // one-line description in the space the time/pill leave.
+        justify-content: flex-start;
         align-items: flex-start;
-        gap: var(--size-4-2);
         flex: 1;
         min-width: 0;
         height: auto;
@@ -96,13 +97,25 @@
     // text-align right-aligns the shorter of the two lines under/above the longer one. padding-top
     // approximates centring against the pill the same way, and for the same reason, as the description
     // above - see its own doc comment for why this isn't a nested flex container.
+    //
+    // A button of its own (it opens the reminder options, like the pill next to it - only the task text
+    // opens the task), so the same reset of Obsidian's base `button` styling as .tasks-notifications-open.
     .tasks-notifications-time {
         flex-shrink: 0;
         color: var(--text-muted);
         text-align: right;
         font-size: 0.8em;
         line-height: 1.15;
-        padding-top: calc((var(--notif-row-height) - 2 * 1.15em) / 2);
+        padding: calc((var(--notif-row-height) - 2 * 1.15em) / 2) 0 0 0;
+        height: auto;
+        background: none;
+        border: none;
+        box-shadow: none;
+        cursor: pointer;
+
+        &:hover {
+            color: var(--text-normal);
+        }
     }
 
     // height: auto (Obsidian's own base `button` styling otherwise imposes a fixed height here too - see

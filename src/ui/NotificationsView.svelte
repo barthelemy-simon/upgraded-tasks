@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onDestroy } from 'svelte';
-    import { Component, MarkdownRenderer, type App } from 'obsidian';
+    import { Component, MarkdownRenderer, Platform, type App } from 'obsidian';
     import type { Task } from '../Task/Task';
     import {
         NOTIFICATION_BUCKET_LABELS,
@@ -63,16 +63,22 @@
     $: isEmpty = NOTIFICATION_BUCKET_ORDER.every((bucket) => groups[bucket].length === 0);
 
     // Same right-click quick-pick menu the rendered reminder pill offers (see TaskLineRenderer.ts) - kept in
-    // sync by construction, since both just build a ReminderMenu from the task.
+    // sync by construction, since both just build a ReminderMenu from the task. On the whole row, so it also
+    // works from the task text, not just from the time and the pill.
     function onRowContextMenu(ev: MouseEvent, task: Task) {
         showMenu(ev, new ReminderMenu(task, taskSaver));
     }
 
-    // The alarm-clock pill does exactly what a rendered reminder pill does on click (see onReminderPillClick):
-    // the Schedule editor on desktop, the quick-pick menu on mobile.
-    function onSchedulePillClick(ev: MouseEvent, task: Task) {
+    // The reminder time and the alarm-clock pill both do exactly what a rendered reminder pill does on click
+    // (see onReminderPillClick): the Schedule editor on desktop, the quick-pick menu on mobile. Only the task
+    // text itself opens the task.
+    function onReminderControlClick(ev: MouseEvent, task: Task) {
         onReminderPillClick(ev, ev.currentTarget as HTMLElement, task, taskSaver);
     }
+
+    const reminderControlTitle = Platform.isMobile
+        ? 'Tap for reminder options'
+        : 'Click to edit reminder, right-click for more options';
 
     // Always two lines: a day/clock line ("today, 16:00" / "tomorrow, 16:00" / "yesterday, 16:00" / "26/10,
     // 16:00"), then the relative duration underneath (rendered with {@html} below for the <br/>) - a bare
@@ -121,21 +127,28 @@
                                 <div
                                     class="tasks-notifications-row"
                                     on:contextmenu={(ev) => onRowContextMenu(ev, task)}
-                                    title="Right-click for options"
                                 >
                                     <button
                                         type="button"
                                         class="tasks-notifications-open"
+                                        title="Open task"
                                         on:click={() => onOpenTask(task)}
                                     >
                                         <span class="tasks-notifications-description" use:renderDescription={task} />
-                                        <span class="tasks-notifications-time">{@html formatReminderTime(task)}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="tasks-notifications-time"
+                                        title={reminderControlTitle}
+                                        on:click={(ev) => onReminderControlClick(ev, task)}
+                                    >
+                                        {@html formatReminderTime(task)}
                                     </button>
                                     <button
                                         type="button"
                                         class="tasks-notifications-schedule-pill"
-                                        title="Open schedule"
-                                        on:click={(ev) => onSchedulePillClick(ev, task)}
+                                        title={reminderControlTitle}
+                                        on:click={(ev) => onReminderControlClick(ev, task)}
                                     >
                                         ⏰
                                     </button>

@@ -5,6 +5,16 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.4.8 — upstream base `8.4.0`
+
+**Notifications view: the reminder time works like the ⏰ pill.** PATCH: UI fix, no scope added.
+
+- In the Reminder Notifications view, the reminder time ("today, 16:00 / in 32 minutes") now does exactly
+  what the ⏰ pill next to it does: on desktop, click opens the Schedule editor and right-click the reminder
+  menu; on mobile, a tap opens the reminder menu. It used to open the task, like the rest of the row. Only
+  the task text opens the task now.
+- `CLAUDE.md`: parked idea, a quick way to add a reminder to a task that has none.
+
 ## 4.4.7 — upstream base `8.4.0`
 
 **On mobile, tapping a reminder pill opens the quick-pick menu.** PATCH: a mobile UI fix, no new
