@@ -2,7 +2,7 @@ import flatpickr from 'flatpickr';
 import type { Task } from '../../Task/Task';
 import { RemoveTaskDate, SetTaskDate } from '../EditInstructions/DateInstructions';
 import type { AllTaskDateFields } from '../../DateTime/DateFieldTypes';
-import { SchedulePopover } from './SchedulePopover';
+import { openScheduleEditor } from './ScheduleModal';
 import type { TaskSaver } from './TaskEditingMenu';
 
 interface LocaleWithWeekInfo extends Intl.Locale {
@@ -73,7 +73,7 @@ export function promptForDate(
                         // Anchor to parentElement (the date pill itself), not the button - it's about to be
                         // removed from the DOM by instance.destroy(), but the pill it's attached to isn't.
                         instance.destroy();
-                        new SchedulePopover(parentElement, task, taskSaver);
+                        openScheduleEditor(parentElement, task, taskSaver);
                     });
                 }
             }

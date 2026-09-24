@@ -7,6 +7,7 @@ import { Commands } from './Commands';
 import { GlobalQuery } from './Config/GlobalQuery';
 import { TasksEvents } from './Obsidian/TasksEvents';
 import { initializeFile } from './Obsidian/File';
+import { initializeScheduleEditor } from './ui/Menus/ScheduleModal';
 import { InlineRenderer } from './Obsidian/InlineRenderer';
 import { newLivePreviewExtension } from './Obsidian/LivePreviewExtension';
 import { QueryRenderer } from './Renderer/QueryRenderer';
@@ -71,6 +72,7 @@ export default class TasksPlugin extends Plugin {
             vault: this.app.vault,
             workspace: this.app.workspace,
         });
+        initializeScheduleEditor(this.app);
 
         // Load configured status types.
         await this.loadTaskStatuses();

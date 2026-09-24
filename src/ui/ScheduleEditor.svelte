@@ -25,7 +25,7 @@
     export let onRemoveScheduledDate: () => void = () => resetFields(true, true);
     export let onRemoveReminderTime: () => void = () => resetFields(false, true);
 
-    // Non-Svelte hosts (SchedulePopover.ts) can't use `bind:`; these fire on every change so such a host can
+    // Non-Svelte hosts (ScheduleForm.ts) can't use `bind:`; these fire on every change so such a host can
     // track live values for its own Apply button. The embedded, Svelte-to-Svelte case (EditTask.svelte) uses
     // ordinary `bind:` instead and simply leaves these unset.
     //
