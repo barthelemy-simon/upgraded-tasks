@@ -5,6 +5,15 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.4.4 — upstream base `8.4.0`
+
+**Edit modal fits a phone screen again.** PATCH: fix only, no scope added.
+
+- On phones, the task edit modal was wider than the screen. Below 500px, upstream lays each date field out
+  as its input plus an auto-sized column for its picker; the fork's Schedule row put its two pickers and
+  its "Reminder fires at…" line in that column, which then sized to their full unwrapped width. They now sit
+  under the Schedule input, in the flexible column, and wrap (`ScheduleEditor.scss`).
+
 ## 4.4.3 — upstream base `8.4.0`
 
 **Schedule popover no longer flickers away on mobile.** PATCH: fix only, no scope added.
