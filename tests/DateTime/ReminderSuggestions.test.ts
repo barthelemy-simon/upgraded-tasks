@@ -90,6 +90,18 @@ describe('buildReminderSuggestions', () => {
         expect(relativeOffsets[0].label).toEqual('In 45 minutes (10:52)');
     });
 
+    it('should not describe the target as "rounded" in the datalist hint when rounding is disabled', () => {
+        const { relativeOffsets } = buildReminderSuggestions([], [45], 0, 'ceil', now);
+
+        expect(relativeOffsets[0].datalistHint).toEqual('(at 10:52)');
+    });
+
+    it('should describe the rounded target in the datalist hint when rounding is enabled', () => {
+        const { relativeOffsets } = buildReminderSuggestions([], [45], 30, 'ceil', now);
+
+        expect(relativeOffsets[0].datalistHint).toEqual('(rounded to 11:00, in 53 minutes)');
+    });
+
     describe('rounding mode', () => {
         it("'floor' should round a relative offset's target down, not up", () => {
             // 10:07 + 45 minutes = 10:52, floored to the previous 30-minute mark = 10:30.

@@ -5,6 +5,15 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.4.2 — upstream base `8.4.0`
+
+**No "rounding" wording when reminder rounding is off.** PATCH: fixes only, no scope added.
+
+- The "Rounding mode" setting (round up / round down / round to nearest) is hidden while "Rounding
+  increment" is "No rounding", since it has no effect then. Both settings UIs.
+- With rounding off, the edit modal's relative-reminder suggestions no longer say "(rounded to 10:52, in 45
+  minutes)"; they say "(at 10:52)".
+
 ## 4.4.1 — upstream base `8.4.0`
 
 **Notifications show task text without Markdown syntax.** PATCH: fix only, no scope added.
