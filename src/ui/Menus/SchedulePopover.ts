@@ -1,4 +1,4 @@
-import { ButtonComponent } from 'obsidian';
+import { ButtonComponent, Platform } from 'obsidian';
 import { TASK_FORMATS } from '../../Config/Settings';
 import type { Task } from '../../Task/Task';
 import { DateFallback } from '../../DateTime/DateFallback';
@@ -26,6 +26,11 @@ export type PopoverAnchor = HTMLElement | { x: number; y: number };
  * flatpickr calendar already has, so dismissing it isn't itself a silent way to lose an edit. Escape/Cancel
  * discard instead, matching `Modal`'s own previous behaviour.
  *
+ * Scrolling or resizing the window also closes it on desktop, since the anchor it's positioned against has
+ * moved. Not on mobile: there, opening the on-screen keyboard resizes the viewport and scrolls the focused
+ * input into view, so the popover would close itself the moment it opened (a visible flicker). On mobile it
+ * also doesn't focus the text input on open, so the keyboard only comes up when the input is tapped.
+ *
  * Opened from: left-clicking an existing Reminder Time pill ({@link TaskLineRenderer}), the Scheduled Date
  * picker's "Add a reminder…" button ({@link promptForDate}), the Scheduled Date right-click menu's "Add a
  * reminder…" item ({@link DateMenu}), and the Reminder Notifications view's own reminder pill.
@@ -51,15 +56,20 @@ export class SchedulePopover {
         this.render();
         this.clampToViewport();
 
-        const input = this.containerEl.querySelector<HTMLInputElement>('#schedule');
-        input?.focus();
+        if (!Platform.isMobile) {
+            const input = this.containerEl.querySelector<HTMLInputElement>('#schedule');
+            input?.focus();
+        }
 
         // Deferred so the very click that opened this popover (still bubbling up to `document`) doesn't
         // immediately close it again.
         window.setTimeout(() => {
+            if (this.closed) {
+                return;
+            }
             activeDocument.addEventListener('mousedown', this.onOutsideMouseDown, true);
-            window.addEventListener('scroll', this.onCancel, true);
-            window.addEventListener('resize', this.onCancel);
+            window.addEventListener('scroll', this.onScroll, true);
+            window.addEventListener('resize', this.onResize);
         }, 0);
     }
 
@@ -147,6 +157,23 @@ export class SchedulePopover {
         this.close();
     };
 
+    private onScroll = (ev: Event): void => {
+        // Scrolling inside the popover itself (e.g. a long suggestion list) doesn't move its anchor.
+        if (Platform.isMobile || this.containerEl.contains(ev.target as Node)) {
+            return;
+        }
+        this.close();
+    };
+
+    private onResize = (): void => {
+        if (Platform.isMobile) {
+            // Most likely the on-screen keyboard opening or closing: keep the popover, but on-screen.
+            this.clampToViewport();
+            return;
+        }
+        this.close();
+    };
+
     private async apply(): Promise<void> {
         if (!this.isValid) {
             this.close();
@@ -172,8 +199,8 @@ export class SchedulePopover {
         }
         this.closed = true;
         activeDocument.removeEventListener('mousedown', this.onOutsideMouseDown, true);
-        window.removeEventListener('scroll', this.onCancel, true);
-        window.removeEventListener('resize', this.onCancel);
+        window.removeEventListener('scroll', this.onScroll, true);
+        window.removeEventListener('resize', this.onResize);
         this.component?.$destroy();
         this.component = undefined;
         this.containerEl.remove();
