@@ -73,7 +73,6 @@ export class TaskModal extends Modal {
                 statusOptions: statusOptions,
                 onSubmit: this.onSubmit,
                 allTasks: this.allTasks,
-                getNotePaths: () => this.app.vault.getMarkdownFiles().map((file) => file.path),
             },
         });
     }

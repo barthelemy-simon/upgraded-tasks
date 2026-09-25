@@ -28,8 +28,6 @@ import { notifyMissedReminders, notifyRemindersDue } from './Notifications/Remin
 import { groupTasksByBucket } from './Notifications/NotificationBuckets';
 import { NOTIFICATIONS_VIEW_TYPE, NotificationsItemView } from './Obsidian/NotificationsItemView';
 import { type NtfyConfig, NtfyReminderSync } from './Notifications/NtfyReminderSync';
-import { setNoteLinkResolver, setNoteLinkTargetResolver } from './CustomFields/CustomFieldDefinition';
-import { obsidianNoteLinkResolver } from './CustomFields/ObsidianNoteLinks';
 
 /** The `obsidian://` action that opens the notifications view - used as ntfy pushes' click target. */
 const OPEN_NOTIFICATIONS_PROTOCOL_ACTION = 'upgraded-tasks-notifications';
@@ -57,10 +55,6 @@ export default class TasksPlugin extends Plugin {
         await this.loadSettings();
 
         EnableJsInTasksQueries.initialise(new ObsidianLocalStorageProvider(this.app));
-        setNoteLinkResolver(obsidianNoteLinkResolver(this.app));
-        setNoteLinkTargetResolver(
-            (linkpath, sourcePath) => this.app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath)?.path ?? null,
-        );
 
         // Configure logging.
         const { loggingOptions } = getSettings();

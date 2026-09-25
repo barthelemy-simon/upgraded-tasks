@@ -77,7 +77,6 @@ describe('TaskSerializer Example', () => {
                 onCompletion: OnCompletion.Ignore,
                 dependsOn: [],
                 id: '',
-                customFields: {},
             };
         }
 

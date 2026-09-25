@@ -82,9 +82,7 @@ export class InlineRenderer {
 
         const path = context.sourcePath;
         const file = this.app.vault.getFileByPath(path) || undefined;
-        // The metadata gives tasks the custom fields they inherit from the note's properties.
-        const cachedMetadata = (file && this.app.metadataCache.getFileCache(file)) || {};
-        const tasksFile = new TasksFile(path, cachedMetadata, file);
+        const tasksFile = new TasksFile(path, {}, file);
 
         const section = context.getSectionInfo(element);
 

@@ -275,43 +275,10 @@ Rules:
    DELETE removes both copies. The desktop gets both its own OS notification and the ntfy push; that
    double delivery is intended, since ntfy is aimed at the phone.
 
-5. ~~**Custom fields.**~~ **Done** (`5.0.0`, see CHANGELOG.md for the feature list). User-defined fields
-   in Settings > Custom fields (`CustomFieldsSettingsUI.ts`, both settings UIs), each with a key, a name,
-   an emoji symbol, a type (`text` or `noteLink`) and an optional default property. Decided with the
-   user: emoji-per-field syntax (`📁 [[Note]]`) rather than Dataview-style inline fields in the emoji
-   format; the Dataview format still uses `[key:: value]`.
-   How it's put together, to keep upstream syncs easy:
-
-   - Values live in `Task.customFields` (keyed by field key, stored exactly as written, so a note link
-     keeps its brackets), and are written by one layout component, `TaskLayoutComponent.CustomFields`,
-     straight after the description.
-   - `src/CustomFields/CustomFieldDefinition.ts` imports nothing on purpose: the serializers read the
-     definitions from it, and `Settings.ts` pushes them in on every `updateSettings()`. Importing
-     `Settings.ts` from a serializer would be an import cycle, since `Settings.ts` builds the serializers at
-     load time.
-   - The serializers cache their per-field regexes by the identity of the definitions array, so
-     `customFields` must always be *replaced*, never changed in place.
-   - A text value runs to the end of the line, so it may not contain any field symbol, and custom fields
-     are parsed after tags (a trailing `#tag` stays a tag). `CustomFieldValidation.ts` rejects values and
-     symbols that break this, and the edit modal disables Apply on them.
-   - Queries use `field <key> ...` / `has field` / `no field` / `sort by field` / `group by field`
-     (`CustomFieldField.ts`), so a custom key can never clash with a built-in instruction.
-     `hide field <key>` is in `TaskLayoutOptions` (per-key, on top of `hide custom fields`).
-   - The default is *inherited*, not written (asked for by the user: "like the scheduled date default").
-     `Task.parseTaskSignifiers` fills in `inferCustomFieldValues()` from `taskLocation.tasksFile.frontmatter`
-     and records the keys in `Task.inferredCustomFieldKeys`, which the serializers skip - the same idea as
-     `scheduledDateIsInferred`. So anything that builds a `TasksFile` without metadata gets no inherited
-     values: `InlineRenderer.ts` was changed to pass the note's metadata, and the modal command goes
-     through `taskFromLineWithInferredCustomFields()`.
-   - Note links the plugin writes go through `setNoteLinkResolver()`, installed in `main.ts` from
-     `ObsidianNoteLinks.ts`, which follows Obsidian's "New link format" (`vault.getConfig('newLinkFormat')`,
-     unofficial but long-stable API). Values already on a task line or in a property are never rewritten.
-   - Edit-modal access keys come from `assignCustomFieldAccessKeys()`, which avoids
-     `builtInEditModalAccessKeys` - update that list if upstream gives the modal a new access key.
-
-   Not done yet, possible follow-ups: a folder-based default, other field types (date, number, list),
-   and rewriting existing tasks when a field's symbol or key changes (today they're left as description
-   text). See also the parked custom-field ideas below.
+5. **Custom fields.** Not started. User-definable fields beyond the built-in ones, e.g. a "Project" field
+   that links to another note, defaulting to the *current* note's own project when adding it to a task (so
+   it doesn't have to be picked by hand every time) — the note's project presumably comes from its own
+   frontmatter or folder location.
 
 6. **Reorderable task edit modal.** Not started. Let the user choose the order of the edit modal's fields
    and sections (description, priority, dates, Schedule, status, dependencies...), rather than the fixed
@@ -335,44 +302,6 @@ Not on the roadmap yet; to come back to later.
   opens the same quick-pick `ReminderMenu` / Schedule editor as an existing reminder's pill. To weigh: the
   visual noise of a pill on every task line (maybe only on hover on desktop, or behind a setting), and how
   it fits Tasks' layout options (`TaskLayoutComponent`, `hide` instructions).
-- **Emoji-only custom field symbols, with an emoji picker.** Parked 2026-09-25. The Symbol input in the
-  custom field modal (`CustomFieldModal` in `CustomFieldsSettingsUI.ts`) should accept only an emoji,
-  and suggest emojis matching what the user types (e.g. "folder" → 📁 🗂️). Today
-  `validateCustomFieldDefinition()` (`CustomFieldValidation.ts`) accepts any text without spaces,
-  brackets, `#` or `^`, as long as it doesn't clash with another symbol. To weigh: how to check "is one
-  emoji" (sequences with ZWJ, skin tones and the `\uFE0F` variation selector; avoid a `u`-flag regex, see
-  the iOS note in `DefaultTaskSerializer`'s `fieldRegex`), and where the name→emoji data comes from. It
-  would need a bundled emoji list (size cost in `main.js`), since Obsidian's API doesn't expose its own.
-  Existing non-emoji symbols in users' settings would still need to load.
-- **Formula defaults for custom fields.** Parked 2026-09-25. Today a field's default can only be one
-  frontmatter property's value (`defaultFromProperty`, inherited - see roadmap item 5). The user would
-  like more, e.g. some sort of formula: combine properties, use the folder or file name, a fixed value,
-  or a fallback chain. No design decided. To weigh: the syntax (Tasks' own `{{...}}` placeholders, or a
-  JavaScript expression like `filter by function`, which is gated behind the "enable JS in queries"
-  setting), and that it runs for every task in the vault on every parse, so it must be cheap.
-- **Rules on a custom field's accepted values.** Parked 2026-09-25. Let a field definition restrict its
-  values: a regex for a text field; for a note link, e.g. only notes in a given folder/path, or with a
-  given tag or property. Would plug into `validateCustomFieldValue()` (`CustomFieldValidation.ts`), which
-  the edit modal already uses to disable Apply. Open question: what to do with a value on a task line (or
-  inherited from a note) that breaks the rule - still read it, but flag it, like the orphaned-reminder pill?
-- **List properties as custom field defaults.** Parked 2026-09-25. When `defaultFromProperty` is a list
-  property, only its first item is used (`customFieldDefaultFromFrontmatter()`), and the user doesn't
-  like losing the rest. Options: a list-valued field type (several values per task, which queries would
-  have to handle, like `tags`), or letting the user pick which item. Tied to the "other field types"
-  follow-up of roadmap item 5.
-- **Show every inherited value in italic, not just custom fields.** Parked 2026-09-25. The user likes how
-  an inherited custom field value is rendered (dimmed italic, `.task-custom-field-inferred` in
-  `Renderer.scss`) and wants the same for any other field whose value is inherited rather than written on
-  the task line. The main one is a scheduled date taken from the file name (`scheduledDateIsInferred`).
-  Today that date isn't shown on the task line at all: `DefaultTaskSerializer.componentToString()`
-  returns '' for it, and `TaskLineRenderer` renders from that same string. So it would need
-  `TaskLineRenderer` to render an inferred scheduled date itself, with an `inferred` class. It shouldn't
-  go through the serializer, or the date would get written back to the file. Keep that change small, since
-  both files are upstream's.
-  The edit modal too: an inherited scheduled date should show greyed out in the Schedule field, like an
-  inherited custom field's placeholder. Today `EditableTask.fromTask()` puts it in as an ordinary typed
-  value, so it can't be told apart from a date written on the line. The upstream save path
-  (`DateFallback.removeInferredStatusIfNeeded()`) only keeps it inferred if the date is left unchanged.
 
 ## Build
 

@@ -1,10 +1,4 @@
-import {
-    type CustomFieldDefinition,
-    explicitCustomFieldValues,
-    getCustomFieldDefinitions,
-} from '../CustomFields/CustomFieldDefinition';
 import { TaskLayoutComponent, TaskLayoutOptions } from '../Layout/TaskLayoutOptions';
-import { escapeRegExp } from '../lib/RegExpTools';
 import { OnCompletion, parseOnCompletionValue } from '../Task/OnCompletion';
 import { Occurrence } from '../Task/Occurrence';
 import { Recurrence } from '../Task/Recurrence';
@@ -162,69 +156,8 @@ export function allTaskPluginEmojis() {
     return allEmojis;
 }
 
-/**
- * A custom field's note-link value: one wikilink, with no brackets inside it.
- */
-export const customFieldNoteLinkValueRegex = /\[\[[^[\]]+\]\]/;
-
 export class DefaultTaskSerializer implements TaskSerializer {
     constructor(public readonly symbols: DefaultTaskSerializerSymbols) {}
-
-    /**
-     * The custom field regexes, rebuilt only when the definitions change (`Settings.ts` replaces the
-     * definitions array on every change, so comparing identity is enough).
-     */
-    private customFieldRegexCache: { definitions: readonly CustomFieldDefinition[]; regexes: RegExp[] } | null = null;
-
-    private customFieldRegexes(definitions: readonly CustomFieldDefinition[]): RegExp[] {
-        if (this.customFieldRegexCache?.definitions !== definitions) {
-            this.customFieldRegexCache = {
-                definitions,
-                regexes: definitions.map((definition) => this.customFieldRegex(definition, definitions)),
-            };
-        }
-        return this.customFieldRegexCache.regexes;
-    }
-
-    /**
-     * Return a regex matching one custom field at the end of a line, whose first capture group is the value
-     * as stored.
-     *
-     * A text value runs to the end of the line, so it is not allowed to contain any field symbol: otherwise
-     * `📁 Acme 🔼` could be read as the value 'Acme 🔼' before the priority is removed.
-     */
-    protected customFieldRegex(definition: CustomFieldDefinition, allDefinitions: readonly CustomFieldDefinition[]) {
-        let valueSource = customFieldNoteLinkValueRegex.source;
-        if (definition.type === 'text') {
-            const excludedSymbols = [
-                ...Object.values(this.symbols.prioritySymbols),
-                ...Object.values(this.symbols).filter((value): value is string => typeof value === 'string'),
-                // Alternative spellings the date regexes above accept:
-                '⌛',
-                '📆',
-                '🗓',
-                ...allDefinitions.map((other) => other.symbol),
-            ]
-                .filter((symbol) => symbol !== '')
-                .map((symbol) => escapeRegExp(symbol));
-            valueSource = `(?:(?!${excludedSymbols.join('|')}).)+`;
-        }
-        return fieldRegex(escapeRegExp(definition.symbol), `(${valueSource})`);
-    }
-
-    /**
-     * Renders a task's custom fields, in the order they are defined in settings. Values inherited from the
-     * note (see `Task.inferredCustomFieldKeys`) are not part of the task line, so are left out.
-     */
-    protected customFieldsToString(task: Task, shortMode: boolean): string {
-        const values = explicitCustomFieldValues(task.customFields, task.inferredCustomFieldKeys);
-        return getCustomFieldDefinitions()
-            .map((definition) => {
-                const value = values[definition.key];
-                return value === undefined ? '' : symbolAndStringValue(shortMode, definition.symbol, value);
-            })
-            .join('');
-    }
 
     /* Convert a task to its string representation
      *
@@ -266,8 +199,6 @@ export class DefaultTaskSerializer implements TaskSerializer {
             // NEW_TASK_FIELD_EDIT_REQUIRED
             case TaskLayoutComponent.Description:
                 return task.description;
-            case TaskLayoutComponent.CustomFields:
-                return this.customFieldsToString(task, shortMode);
             case TaskLayoutComponent.Priority: {
                 let priority: string = '';
 
@@ -397,9 +328,6 @@ export class DefaultTaskSerializer implements TaskSerializer {
         let onCompletion: OnCompletion = OnCompletion.Ignore;
         let id: string = '';
         let dependsOn: string[] | [] = [];
-        const customFields: Record<string, string> = {};
-        const customFieldDefinitions = getCustomFieldDefinitions();
-        const customFieldRegexes = this.customFieldRegexes(customFieldDefinitions);
         // Tags that are removed from the end while parsing, but we want to add them back for being part of the description.
         // In the original task description they are possibly mixed with other components
         // (e.g. #tag1 <due date> #tag2), they do not have to all trail all task components,
@@ -457,14 +385,6 @@ export class DefaultTaskSerializer implements TaskSerializer {
                     .filter((item) => item !== '');
             });
 
-            // Custom fields go last, after the tags: a trailing '#tag' stays a tag of the task,
-            // rather than becoming part of a text field's value.
-            customFieldDefinitions.forEach((definition, index) => {
-                this.extractField(state, customFieldRegexes[index], (match) => {
-                    customFields[definition.key] = match[1].trim();
-                });
-            });
-
             runs++;
         } while (state.matched && runs <= maxRuns);
 
@@ -499,7 +419,6 @@ export class DefaultTaskSerializer implements TaskSerializer {
             onCompletion,
             id,
             dependsOn,
-            customFields,
             tags: Task.extractHashtags(state.line),
         };
     }

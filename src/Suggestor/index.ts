@@ -8,8 +8,6 @@ export type SuggestInfo = {
     suggestionType?: 'match' | 'default' | 'empty';
     /** What to display to the user  */
     displayText: string;
-    /** A second, smaller line under {@link displayText}, e.g. a note's folder (fork). */
-    displayDetail?: string;
     /** What to append to the note  */
     appendText: string;
     /** At what index in the line to do the insertion (if not specified, the cursor location is used) */
@@ -22,11 +20,6 @@ export type SuggestInfo = {
     taskItDependsOn?: Task;
 };
 
-export interface SuggestorNoteContext {
-    path: string;
-    frontmatter?: Readonly<Record<string, unknown>>;
-}
-
 /*
  * Return a list of suggestions, either generic or more fine-grained to the words at the cursor.
  */
@@ -37,6 +30,4 @@ export type SuggestionBuilder = (
     allTasks: Task[],
     canSaveEdits: boolean,
     taskToSuggestFor?: Task,
-    /** The note being edited, for custom field defaults and note links (fork roadmap item 5). */
-    note?: SuggestorNoteContext,
 ) => SuggestInfo[];

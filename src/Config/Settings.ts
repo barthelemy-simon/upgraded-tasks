@@ -13,7 +13,6 @@ import type { LogOptions } from '../lib/logging';
 import { DataviewTaskSerializer } from '../TaskSerializer/DataviewTaskSerializer';
 import { i18n } from '../i18n/i18n';
 import { type PresetsMap, defaultPresets } from '../Query/Presets/Presets';
-import { type CustomFieldDefinition, setCustomFieldDefinitions } from '../CustomFields/CustomFieldDefinition';
 import { DebugSettings } from './DebugSettings';
 import { type EditModalShowSettings, defaultEditModalShowSettings } from './EditModalShowSettings';
 import { StatusSettings } from './StatusSettings';
@@ -104,12 +103,6 @@ export interface Settings {
     ntfyTopic: string;
     ntfyAccessToken: string;
     ntfyIncludeTaskText: boolean;
-    /**
-     * User-defined task fields, in the order they are written to a task line. Always replace this array
-     * rather than changing it in place: the serializers compare it by identity to know when to rebuild
-     * their regexes.
-     */
-    customFields: CustomFieldDefinition[];
     searchResults: {
         taskCountLocation: 'top' | 'bottom';
     };
@@ -173,7 +166,6 @@ const defaultSettings: Readonly<Settings> = {
     ntfyTopic: '',
     ntfyAccessToken: '',
     ntfyIncludeTaskText: true,
-    customFields: [],
     searchResults: {
         taskCountLocation: 'bottom',
     },
@@ -266,14 +258,12 @@ export const updateSettings = (newSettings: Partial<Settings>): Settings => {
     const migratedSettings = migrateSettings(newSettings);
 
     settings = { ...settings, ...migratedSettings };
-    setCustomFieldDefinitions(settings.customFields);
 
     return getSettings();
 };
 
 export const resetSettings = (): Settings => {
     settings = JSON.parse(JSON.stringify(defaultSettings)) as Settings;
-    setCustomFieldDefinitions(settings.customFields);
     return settings;
 };
 
