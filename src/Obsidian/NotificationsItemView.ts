@@ -1,4 +1,5 @@
-import { ItemView, type WorkspaceLeaf } from 'obsidian';
+import { ItemView, type TFile, type WorkspaceLeaf } from 'obsidian';
+import { getSettings } from '../Config/Settings';
 import type TasksPlugin from '../main';
 import type { Task } from '../Task/Task';
 import { groupTasksByBucket } from '../Notifications/NotificationBuckets';
@@ -54,7 +55,7 @@ export class NotificationsItemView extends ItemView {
             target: this.contentEl,
             props: {
                 groups: this.computeGroups(),
-                onOpenTask: (task: Task) => void openTaskAtSourceLocation(task, this.app),
+                onOpenTask: (task: Task) => void this.openTask(task),
                 app: this.app,
             },
         });
@@ -79,6 +80,40 @@ export class NotificationsItemView extends ItemView {
     async onClose(): Promise<void> {
         this.view?.$destroy();
         this.view = undefined;
+    }
+
+    /**
+     * Opens a clicked task's note in the tab chosen by {@link leafToOpenTaskIn}, then makes that tab the
+     * active one - `openFile` alone loads the note into a new or background tab without switching to it.
+     */
+    private async openTask(task: Task): Promise<void> {
+        let leaf: WorkspaceLeaf | undefined;
+        await openTaskAtSourceLocation(task, this.app, (file) => {
+            leaf = this.leafToOpenTaskIn(file);
+            return leaf;
+        });
+        if (leaf !== undefined) {
+            this.app.workspace.setActiveLeaf(leaf, { focus: true });
+        }
+    }
+
+    /** The tab to open a clicked task's note in, per the `notificationsOpenTaskIn` setting. */
+    private leafToOpenTaskIn(file: TFile): WorkspaceLeaf {
+        const workspace = this.app.workspace;
+        switch (getSettings().notificationsOpenTaskIn) {
+            case 'current':
+                return this.leaf;
+            case 'new':
+                return workspace.getLeaf('tab');
+            case 'reuse': {
+                // Read from the view state rather than `leaf.view.file`: a tab restored at startup but not yet
+                // shown is a deferred view, with no file on its view until it's first displayed.
+                const existing = workspace
+                    .getLeavesOfType('markdown')
+                    .find((leaf) => leaf.getViewState().state?.file === file.path);
+                return existing ?? workspace.getLeaf('tab');
+            }
+        }
     }
 
     private computeGroups() {

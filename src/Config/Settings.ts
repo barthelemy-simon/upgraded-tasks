@@ -63,6 +63,14 @@ export const TASK_FORMATS = {
 
 export type TASK_FORMATS = typeof TASK_FORMATS; // For convenience to make some typing easier
 
+/**
+ * Where the Reminder Notifications view opens a task's note when it's clicked:
+ * - `reuse`: switch to a tab already showing that note, otherwise open a new tab
+ * - `current`: open it in the notifications view's own tab, replacing the view
+ * - `new`: always open a new tab
+ */
+export type NotificationsOpenTaskIn = 'reuse' | 'current' | 'new';
+
 export interface Settings {
     presets: PresetsMap;
     globalQuery: string;
@@ -88,6 +96,8 @@ export interface Settings {
     reminderRoundingMode: 'floor' | 'round' | 'ceil';
     notificationsEnabled: boolean;
     notificationCheckIntervalSeconds: number;
+    notificationNoticeDurationSeconds: number;
+    notificationsOpenTaskIn: NotificationsOpenTaskIn;
     ntfyEnabled: boolean;
     ntfyServerUrl: string;
     ntfyTopic: string;
@@ -149,6 +159,8 @@ const defaultSettings: Readonly<Settings> = {
     reminderRoundingMode: 'ceil',
     notificationsEnabled: false,
     notificationCheckIntervalSeconds: 60,
+    notificationNoticeDurationSeconds: 10,
+    notificationsOpenTaskIn: 'reuse',
     ntfyEnabled: false,
     ntfyServerUrl: 'https://ntfy.sh',
     ntfyTopic: '',

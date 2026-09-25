@@ -64,13 +64,13 @@ export function chooseNotificationChannel(): 'native' | 'notice' {
  * tick) surface as one combined alert, not a burst. {@link tasks} must be non-empty; callers should skip
  * calling this at all when nothing is due.
  *
- * Both delivery channels are persistent, staying visible until the user dismisses them, rather than
- * auto-disappearing after a few seconds like a typical transient toast - a reminder that vanishes on its
- * own timer defeats the point of it:
- * - native: `requireInteraction: true` (standard `NotificationOptions`) keeps the OS notification on
- *   screen until dismissed.
- * - notice: duration `0`, same as other important Notices in this codebase (e.g.
- *   `settings.statuses.reloadRequired`).
+ * How long each channel stays on screen:
+ * - native: persistent, via `requireInteraction: true` (standard `NotificationOptions`) - it lives in the
+ *   OS notification area, so staying until dismissed costs nothing, and a reminder that vanishes on its own
+ *   timer defeats the point of it.
+ * - notice: {@link noticeDurationSeconds} (the `notificationNoticeDurationSeconds` setting), where `0`
+ *   means until dismissed. Unlike an OS notification, a `Notice` covers the top of the app itself - on
+ *   mobile that's the note being read, which is why this one is configurable.
  *
  * If given, {@link onClick} fires when the user clicks/activates the notification, on either channel (e.g.
  * to focus Obsidian and open the notifications view - see `main.ts`). Deliberately just a plain callback,
@@ -86,7 +86,12 @@ export function chooseNotificationChannel(): 'native' | 'notice' {
  * {@link titleOverride}, if given, is passed straight through to {@link buildReminderNotificationContent}
  * - see {@link notifyMissedReminders} for the other caller that uses this.
  */
-export function notifyRemindersDue(tasks: Task[], onClick?: () => void, titleOverride?: string): void {
+export function notifyRemindersDue(
+    tasks: Task[],
+    onClick?: () => void,
+    titleOverride?: string,
+    noticeDurationSeconds = 0,
+): void {
     const { title, body } = buildReminderNotificationContent(tasks, titleOverride);
 
     if (chooseNotificationChannel() === 'native') {
@@ -109,14 +114,14 @@ export function notifyRemindersDue(tasks: Task[], onClick?: () => void, titleOve
 
     const fragment = createFragment();
     fragment.appendChild(container);
-    new Notice(fragment, 0);
+    new Notice(fragment, noticeDurationSeconds * 1000);
 }
 
 /**
  * Fires the one-time startup summary for reminders that were already overdue before this session began -
  * "N reminders came due while you were away" - rather than "N reminders due" (which would misleadingly
  * suggest they just became due now). Otherwise identical to {@link notifyRemindersDue}: same combined
- * single-notification shape, same persistence, same optional click callback.
+ * single-notification shape, same notice duration, same optional click callback.
  *
  * This exists because `ReminderCheckLoop` (`NotificationScheduler.ts`) deliberately never fires
  * individually for anything already overdue when it's constructed (its window starts at construction time,
@@ -124,6 +129,6 @@ export function notifyRemindersDue(tasks: Task[], onClick?: () => void, titleOve
  * while Obsidian is fully closed would otherwise be silently skipped forever, not just delayed. See
  * `main.ts`'s `checkForMissedRemindersOnStartup` for where this is actually called from, once, at startup.
  */
-export function notifyMissedReminders(tasks: Task[], onClick?: () => void): void {
-    notifyRemindersDue(tasks, onClick, missedReminderTitle(tasks));
+export function notifyMissedReminders(tasks: Task[], onClick?: () => void, noticeDurationSeconds = 0): void {
+    notifyRemindersDue(tasks, onClick, missedReminderTitle(tasks), noticeDurationSeconds);
 }

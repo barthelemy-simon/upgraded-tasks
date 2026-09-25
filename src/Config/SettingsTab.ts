@@ -26,6 +26,7 @@ import type { TasksEvents } from '../Obsidian/TasksEvents';
 import * as Themes from './Themes';
 import {
     type HeadingState,
+    type NotificationsOpenTaskIn,
     type Settings,
     TASK_FORMATS,
     getSettings,
@@ -1090,8 +1091,51 @@ export class SettingsTab extends PluginSettingTab {
                         });
                     }),
                 },
+                ...this.notificationDisplaySettingItems(),
             ],
         };
+    }
+
+    /**
+     * The in-app notice duration and "open task in" settings, defined once and rendered by both settings
+     * UIs - {@link notificationsGroup} for the declarative one, {@link display} for the fallback.
+     */
+    private notificationDisplaySettingItems(): { name: string; desc: string; render: (setting: Setting) => void }[] {
+        return [
+            {
+                name: i18n.t('settings.notifications.noticeDurationSeconds.name'),
+                desc: i18n.t('settings.notifications.noticeDurationSeconds.description'),
+                render: (setting) => {
+                    setting.addText((text) => {
+                        text.setValue(String(getSettings().notificationNoticeDurationSeconds)).onChange(
+                            async (value) => {
+                                const seconds = Number(value);
+                                if (value.trim() === '' || !Number.isFinite(seconds) || seconds < 0) {
+                                    return;
+                                }
+                                updateSettings({ notificationNoticeDurationSeconds: seconds });
+                                await this.plugin.saveSettings();
+                            },
+                        );
+                    });
+                },
+            },
+            {
+                name: i18n.t('settings.notifications.openTaskIn.name'),
+                desc: i18n.t('settings.notifications.openTaskIn.description'),
+                render: (setting) => {
+                    setting.addDropdown((dropdown) => {
+                        dropdown.addOption('reuse', i18n.t('settings.notifications.openTaskIn.options.reuse'));
+                        dropdown.addOption('current', i18n.t('settings.notifications.openTaskIn.options.current'));
+                        dropdown.addOption('new', i18n.t('settings.notifications.openTaskIn.options.new'));
+                        dropdown.setValue(getSettings().notificationsOpenTaskIn).onChange(async (value) => {
+                            updateSettings({ notificationsOpenTaskIn: value as NotificationsOpenTaskIn });
+                            await this.plugin.saveSettings();
+                        });
+                    });
+                },
+            },
+        ];
     }
 
     // ---- Push notifications (ntfy) ----------------------------------------
@@ -1798,6 +1842,10 @@ export class SettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 });
             });
+
+        for (const { name, desc, render } of this.notificationDisplaySettingItems()) {
+            render(new Setting(containerEl).setName(name).setDesc(desc));
+        }
 
         // ---------------------------------------------------------------------------
         new Setting(containerEl).setName(i18n.t('settings.notifications.ntfy.heading')).setHeading();
