@@ -5,55 +5,6 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
-## 5.0.0 — upstream base `8.4.0`
-
-**Custom fields (roadmap item 5).** MAJOR: a roadmap item's first working version. The task syntax only
-gains new fields: every existing task line reads exactly as before.
-
-- Settings > Custom fields: define your own task fields, each with a name, a key, a symbol, a type
-  (text, or a link to a note) and an optional default. Fields can be reordered, which sets the order they
-  are written in. Changing them re-reads the vault.
-- On the task line, a field is its symbol then its value, straight after the description:
-  `- [ ] Write report 📁 [[Website redesign]] 📅 2026-10-01`. In the Dataview format it is an inline field
-  named by its key: `[project:: [[Website redesign]]]`. A field's value is kept on the next occurrence of a
-  recurring task.
-- Default from a note property: a task that doesn't set a field inherits the value of the field's
-  property from its note's frontmatter (the first item, for a list property). Like a scheduled date taken
-  from the file name, the value counts everywhere (queries, grouping, display) but is never written on
-  the task line, so changing the property changes all the note's tasks at once. On the task line it is
-  shown dimmed (`task-custom-field-inferred`).
-- Edit modal: one input per field, below Priority, each with a free access key (Alt+key: letters of the
-  field's name first, never one the modal already uses). A note link is typed without brackets, with a
-  dropdown of matching notes: each note once (however other tasks link to it), its name in bold and its
-  folder below in small italics (`/` for the vault root); notes already used come first. Picking one fills in its name, or its
-  path if other notes share the name. A text field offers the values already used on other tasks. An inherited
-  value is the input's placeholder, and stays inherited while the input is left empty. Values that
-  wouldn't read back unchanged (containing a field symbol, or ending with a tag) disable Apply.
-- A note link the plugin writes (typed in the modal, or picked from auto-suggest) follows Obsidian's
-  "New link format" setting: shortest, relative or absolute path. When that gives a path, the note's name
-  is added as the alias, as Obsidian does: `[[Projects/Website|Website]]` (unless an alias is typed). A
-  name matching no note is kept as typed.
-- Task line in search results and Reading view: each field is shown with its value rendered, so a note link
-  can be clicked. Each field gets a `task-custom-field-<key>` class and a `data-task-field-<key>`
-  attribute, also set on the task's list item, for CSS. `hide custom fields` hides them all,
-  `hide field <key>` one of them.
-- Queries: `has field <key>`, `no field <key>`, `field <key> includes|does not include|regex matches|regex
-  does not match <text>`, `sort by field <key>` and `group by field <key>`, with `reverse` too. In
-  scripting, `task.customFields.<key>`.
-- Note links in queries compare by the note they point to, not by how the link is written: `[[Website]]`,
-  `[[Projects/Website]]`, `[[Projects/Website|Website]]` and `[[Website#Plan]]` all group together, under a
-  heading linking to the note and showing its name; they sort by note name; and filters match the note's
-  path as well as the link text. A link to a note that doesn't exist yet groups by its name as written.
-- Auto-suggest: the fields are offered with the other task properties; after a field's symbol, its values
-  are offered: the note's default first, then the values most used on other tasks. A note link is offered
-  once per note, on two lines like the modal's dropdown. Once a note link starts
-  with `[[`, Obsidian's own link suggestions take over.
-- Upstream code touched: the two serializers, `Task.ts`, `TaskLayoutOptions.ts`, `TaskLineRenderer.ts`,
-  `TaskFieldRenderer.ts`, `InlineRenderer.ts` (now gives tasks their note's metadata), `Suggestor.ts` (also fixing `onlySuggestIfBracketOpen()`, which dropped the task
-  being edited in the Dataview format), `EditTask.svelte`, `EditableTask.ts`, `CreateOrEditTaskParser.ts`
-  and `FilterParser.ts`. The fork's own code is in `src/CustomFields/`, `CustomFieldField.ts`,
-  `CustomFieldsEditor.svelte` and `CustomFieldsSettingsUI.ts`.
-
 ## 4.5.1 — upstream base `8.4.0`
 
 **No in-app notice after tapping a ntfy push.** PATCH: removes a duplicate alert, no scope added.

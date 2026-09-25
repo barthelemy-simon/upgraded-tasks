@@ -99,13 +99,7 @@ describe('TaskBuilder', () => {
     it('createFullyPopulatedTask() should populate every field', () => {
         const task: Task = TaskBuilder.createFullyPopulatedTask();
 
-        // inferredCustomFieldKeys: a value can only be inferred from a note's properties, which a built task has none of.
-        expect(getNullOrUnsetFields(task)).toEqual([
-            'children',
-            'inferredCustomFieldKeys',
-            'markdownHardBreak',
-            'parent',
-        ]);
+        expect(getNullOrUnsetFields(task)).toEqual(['children', 'markdownHardBreak', 'parent']);
         expect(getNullOrUnsetFields(task.taskLocation)).toEqual([]);
 
         expect(task.originalMarkdown).toEqual(

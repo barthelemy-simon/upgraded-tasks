@@ -1,19 +1,8 @@
-import {
-    type CustomFieldDefinition,
-    explicitCustomFieldValues,
-    getCustomFieldDefinitions,
-} from '../CustomFields/CustomFieldDefinition';
 import { TaskLayoutComponent } from '../Layout/TaskLayoutOptions';
 import { PriorityTools } from '../lib/PriorityTools';
-import { escapeRegExp } from '../lib/RegExpTools';
 import type { Priority } from '../Task/Priority';
 import type { Task } from '../Task/Task';
-import {
-    DefaultTaskSerializer,
-    customFieldNoteLinkValueRegex,
-    taskIdRegex,
-    taskIdSequenceRegex,
-} from './DefaultTaskSerializer';
+import { DefaultTaskSerializer, taskIdRegex, taskIdSequenceRegex } from './DefaultTaskSerializer';
 
 /**
  * Takes a regex of the form 'key:: value' and turns it into a regex that can parse
@@ -120,31 +109,7 @@ export class DataviewTaskSerializer extends DefaultTaskSerializer {
         return PriorityTools.priorityValue(p);
     }
 
-    /**
-     * A custom field is an inline field named by its key: `[project:: [[Website redesign]]]`.
-     */
-    protected customFieldRegex(definition: CustomFieldDefinition, _allDefinitions: readonly CustomFieldDefinition[]) {
-        const valueSource =
-            definition.type === 'noteLink' ? customFieldNoteLinkValueRegex.source : /[^[\]()]*[^[\]()\s]/.source;
-        return toInlineFieldRegex(new RegExp(`${escapeRegExp(definition.key)}:: *(${valueSource})`));
-    }
-
-    protected customFieldsToString(task: Task, _shortMode: boolean): string {
-        const values = explicitCustomFieldValues(task.customFields, task.inferredCustomFieldKeys);
-        return getCustomFieldDefinitions()
-            .map((definition) => {
-                const value = values[definition.key];
-                // Two leading spaces, as in componentToString() below.
-                return value === undefined ? '' : `  [${definition.key}:: ${value}]`;
-            })
-            .join('');
-    }
-
     public componentToString(task: Task, shortMode: boolean, component: TaskLayoutComponent) {
-        if (component === TaskLayoutComponent.CustomFields) {
-            // Already one inline field per custom field, so not wrapped again below.
-            return this.customFieldsToString(task, shortMode);
-        }
         const stringComponent = super.componentToString(task, shortMode, component);
         const notInlineFieldComponents: TaskLayoutComponent[] = [
             TaskLayoutComponent.BlockLink,

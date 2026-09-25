@@ -12,11 +12,6 @@ import { Recurrence } from '../Task/Recurrence';
 import { Task } from '../Task/Task';
 import { addDependencyToParent, ensureTaskHasId, generateUniqueId, removeDependency } from '../Task/TaskDependency';
 import { StatusType } from '../Statuses/StatusConfiguration';
-import {
-    customFieldValueForEditing,
-    customFieldValueForStoring,
-    getCustomFieldDefinitions,
-} from '../CustomFields/CustomFieldDefinition';
 import { SetReminderDateTime, SetReminderTime } from './EditInstructions/ReminderInstructions';
 
 /**
@@ -41,8 +36,6 @@ export class EditableTask {
     doneDate: string;
     cancelledDate: string;
     reminderTime: string;
-    /** Custom field values as shown in the modal, keyed by field key - see customFieldValueForEditing(). */
-    customFields: Record<string, string>;
     forwardOnly: boolean;
     blockedBy: Task[];
     blocking: Task[];
@@ -64,7 +57,6 @@ export class EditableTask {
         doneDate: string;
         cancelledDate: string;
         reminderTime: string;
-        customFields: Record<string, string>;
         forwardOnly: boolean;
         blockedBy: Task[];
         blocking: Task[];
@@ -84,7 +76,6 @@ export class EditableTask {
         this.doneDate = editableTask.doneDate;
         this.cancelledDate = editableTask.cancelledDate;
         this.reminderTime = editableTask.reminderTime;
-        this.customFields = editableTask.customFields;
         this.forwardOnly = editableTask.forwardOnly;
         this.blockedBy = editableTask.blockedBy;
         this.blocking = editableTask.blocking;
@@ -129,16 +120,6 @@ export class EditableTask {
 
         const originalBlocking = allTasks.filter((cacheTask) => cacheTask.dependsOn.includes(task.id));
 
-        // Only the values written on the task line are editable. Inherited ones are shown as placeholders by
-        // CustomFieldsEditor.svelte, and are kept while the field is left empty.
-        const customFields: Record<string, string> = {};
-        for (const definition of getCustomFieldDefinitions()) {
-            const value = task.customFields[definition.key];
-            const isInferred = task.inferredCustomFieldKeys.includes(definition.key);
-            customFields[definition.key] =
-                value === undefined || isInferred ? '' : customFieldValueForEditing(definition, value);
-        }
-
         return new EditableTask({
             addGlobalFilterOnSave,
             originalBlocking,
@@ -156,7 +137,6 @@ export class EditableTask {
             doneDate: task.done.formatAsDate(),
             cancelledDate: task.cancelled.formatAsDate(),
             reminderTime: task.reminderTime ?? '',
-            customFields,
             forwardOnly: true,
             blockedBy: blockedBy,
             blocking: originalBlocking,
@@ -199,20 +179,6 @@ export class EditableTask {
         // If parsing fails, EditTask.svelte's own validation should already have disabled Apply - but
         // fall back to no reminder rather than throwing, if this is somehow reached anyway.
         const reminderTime = parsedReminderTime?.time ?? null;
-
-        const customFields: Record<string, string> = {};
-        const inferredCustomFieldKeys: string[] = [];
-        for (const definition of getCustomFieldDefinitions()) {
-            const typedValue = this.customFields[definition.key] ?? '';
-            const value = customFieldValueForStoring(definition, typedValue, task.path);
-            if (value !== null) {
-                customFields[definition.key] = value;
-            } else if (task.inferredCustomFieldKeys.includes(definition.key)) {
-                // Left empty: the field still inherits its value from the note.
-                customFields[definition.key] = task.customFields[definition.key];
-                inferredCustomFieldKeys.push(definition.key);
-            }
-        }
 
         let recurrence: Recurrence | null = null;
         if (this.recurrenceRule) {
@@ -261,8 +227,6 @@ export class EditableTask {
             createdDate,
             cancelledDate,
             reminderTime,
-            customFields,
-            inferredCustomFieldKeys,
             dependsOn: blockedByWithIds.map((task) => task.id),
             id,
         });

@@ -12,32 +12,6 @@
     "unloadingPlugin": "Unloading plugin: {{name}} v{{version}}"
   },
   "modals": {
-    "customFieldModal": {
-      "defaultFromProperty": {
-        "description": "Optional. A task that doesn't set this field inherits the value of this property of its note. The value isn't written on the task line, and is shown dimmed. For a list property, its first item is used.",
-        "name": "Default from property"
-      },
-      "key": {
-        "description": "Used in queries ('group by field project'), in the Dataview format and in scripting. Letters, digits, '-' and '_', starting with a letter.",
-        "name": "Key"
-      },
-      "label": {
-        "description": "Shown in the task edit modal and in group headings.",
-        "name": "Name"
-      },
-      "symbol": {
-        "description": "Written before the value on the task line, in the Tasks emoji format. Usually a single emoji, not already used by Tasks.",
-        "name": "Symbol"
-      },
-      "title": {
-        "add": "Add custom field",
-        "edit": "Edit custom field"
-      },
-      "type": {
-        "description": "A note link is written '[[Note name]]', and can be clicked in search results.",
-        "name": "Type"
-      }
-    },
     "customStatusModal": {
       "editAvailableAsCommand": {
         "description": "If enabled this status will be available as a command so you can assign a hotkey and toggle the status using it.",
@@ -169,24 +143,6 @@
       }
     },
     "changeRequiresRestart": "REQUIRES RESTART.",
-    "customFields": {
-      "buttons": {
-        "addField": "Add custom field"
-      },
-      "defaultFrom": "Inherited from the note's '{{property}}' property",
-      "description": {
-        "line1": "Add your own fields to tasks, such as a Project that links to a note. A field is written on the task line after its symbol, like '📁 [[Website redesign]]', or as '[project:: [[Website redesign]]]' in the Dataview format. It can have a default, read from a property of the task's note: tasks that don't set the field inherit it, without it being written on the task line (like a scheduled date taken from the file name).",
-        "line2": "In queries, use 'field KEY includes TEXT' (or 'does not include', 'regex matches', 'regex does not match'), 'has field KEY', 'no field KEY', 'sort by field KEY' and 'group by field KEY'. 'hide custom fields' hides them from the results, 'hide field KEY' hides one. In scripting, a field's value is 'task.customFields.KEY'.",
-        "line3": "Changing a field's symbol or key doesn't rewrite existing tasks: a task still using the old one shows it as part of its description. Deleting a field removes nothing from your notes either."
-      },
-      "emptyState": "No custom fields yet.",
-      "heading": "Custom fields",
-      "noDefault": "No default",
-      "types": {
-        "noteLink": "Note link",
-        "text": "Text"
-      }
-    },
     "dates": {
       "cancelledDate": {
         "description": "Enabling this will add a timestamp ❌ YYYY-MM-DD at the end when a task is toggled to cancelled.",

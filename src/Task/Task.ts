@@ -9,11 +9,6 @@ import { PriorityTools } from '../lib/PriorityTools';
 import { logging } from '../lib/logging';
 import { logEndOfTaskEdit, logStartOfTaskEdit } from '../lib/LogTasksHelper';
 import { DateFallback } from '../DateTime/DateFallback';
-import {
-    type CustomFieldValues,
-    customFieldValuesIdentical,
-    inferCustomFieldValues,
-} from '../CustomFields/CustomFieldDefinition';
 import { ListItem } from './ListItem';
 import type { Occurrence } from './Occurrence';
 import { Urgency } from './Urgency';
@@ -76,20 +71,6 @@ export class Task extends ListItem {
     public readonly dependsOn: string[];
     public readonly id: string;
 
-    /**
-     * The values of the user-defined fields (fork roadmap item 5), keyed by field key - see
-     * {@link CustomFieldValues}. Public, so that spreading a Task copies it, and so that scripting can read
-     * it: `task.customFields.project`.
-     */
-    public readonly customFields: CustomFieldValues;
-
-    /**
-     * The keys in {@link customFields} whose value is inherited from a property of the task's note, rather
-     * than written on the task line - see `inferCustomFieldValues()`. They are never written back, like
-     * {@link scheduledDateIsInferred}.
-     */
-    public readonly inferredCustomFieldKeys: readonly string[];
-
     /** The blockLink is a "^" annotation after the dates/recurrence rules.
      * Any non-empty value must begin with ' ^'. */
     public readonly blockLink: string;
@@ -127,8 +108,6 @@ export class Task extends ListItem {
         onCompletion: OnCompletion;
         dependsOn: string[] | [];
         id: string;
-        customFields?: CustomFieldValues;
-        inferredCustomFieldKeys?: readonly string[];
         blockLink: string;
         tags: string[] | [];
         originalMarkdown: string;
@@ -154,8 +133,6 @@ export class Task extends ListItem {
             onCompletion,
             dependsOn,
             id,
-            customFields,
-            inferredCustomFieldKeys,
             blockLink,
             tags,
             originalMarkdown,
@@ -191,9 +168,6 @@ export class Task extends ListItem {
 
         this.dependsOn = dependsOn;
         this.id = id;
-
-        this.customFields = customFields ?? {};
-        this.inferredCustomFieldKeys = inferredCustomFieldKeys ?? [];
 
         this.blockLink = blockLink;
 
@@ -307,17 +281,9 @@ export class Task extends ListItem {
         // Remove the Global Filter if it is there
         taskInfo.tags = taskInfo.tags.filter((tag) => !GlobalFilter.getInstance().equals(tag));
 
-        // Custom fields the task inherits from its note's properties
-        const { customFields, inferredCustomFieldKeys } = inferCustomFieldValues(
-            taskInfo.customFields,
-            taskLocation.tasksFile.frontmatter,
-        );
-
         return new Task({
             ...taskComponents,
             ...taskInfo,
-            customFields,
-            inferredCustomFieldKeys,
             taskLocation: taskLocation,
             originalMarkdown: line,
             scheduledDateIsInferred,
@@ -945,13 +911,6 @@ export class Task extends ListItem {
         }
 
         if (!this.status.identicalTo(other.status)) {
-            return false;
-        }
-
-        if (!customFieldValuesIdentical(this.customFields, other.customFields)) {
-            return false;
-        }
-        if (this.inferredCustomFieldKeys.join(',') !== other.inferredCustomFieldKeys.join(',')) {
             return false;
         }
 
