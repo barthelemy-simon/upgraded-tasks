@@ -28,3 +28,30 @@
         margin-top: 4px;
     }
 }
+
+// Phone widths. Below 500px, upstream's EditTask.scss collapses this grid to one flexible column, with each
+// field's picker in an extra auto-sized column beside it. The Schedule row's pickers cell holds two
+// pickers, and its status line a full sentence - as an auto column, sized to their full unwrapped width,
+// that alone pushed the whole edit modal wider than the screen. Here they go in the flexible column
+// instead, under the text input, and are allowed to wrap.
+@media (max-width: 499px) {
+    .tasks-modal-dates-section {
+        #schedule-suggestions ~ .tasks-modal-parsed-date,
+        #schedule-suggestions ~ .tasks-modal-error {
+            grid-column: 1;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        #schedule-suggestions + .tasks-modal-parsed-date {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            row-gap: 4px;
+        }
+
+        .tasks-modal-schedule-buttons {
+            flex-wrap: wrap;
+        }
+    }
+}

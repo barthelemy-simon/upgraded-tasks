@@ -5,6 +5,27 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.4.5 — upstream base `8.4.0`
+
+**Schedule editor opens as a modal on mobile.** PATCH: a mobile UI fix, no scope added.
+
+- On mobile, tapping a Reminder Time pill (in a note or the Notifications view), or "Add a reminder…" on a
+  Scheduled date, now opens the Schedule editor in an Obsidian modal, laid out for the phone, instead of a
+  small popover floating next to the pill. Cancel, the close button or tapping outside close it without
+  saving; Apply saves. Desktop keeps the popover, unchanged.
+- The form itself moved out of `SchedulePopover.ts` into `ScheduleForm.ts`, shared by the popover and the
+  new `ScheduleModal.ts`. All four places that open it now call `openScheduleEditor`, which picks between
+  them. 4.4.3's mobile-only handling inside the popover is gone, since the popover no longer runs on mobile.
+
+## 4.4.4 — upstream base `8.4.0`
+
+**Edit modal fits a phone screen again.** PATCH: fix only, no scope added.
+
+- On phones, the task edit modal was wider than the screen. Below 500px, upstream lays each date field out
+  as its input plus an auto-sized column for its picker; the fork's Schedule row put its two pickers and
+  its "Reminder fires at…" line in that column, which then sized to their full unwrapped width. They now sit
+  under the Schedule input, in the flexible column, and wrap (`ScheduleEditor.scss`).
+
 ## 4.4.3 — upstream base `8.4.0`
 
 **Schedule popover no longer flickers away on mobile.** PATCH: fix only, no scope added.
