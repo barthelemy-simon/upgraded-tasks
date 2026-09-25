@@ -2,7 +2,11 @@
  * @jest-environment jsdom
  */
 import moment from 'moment';
-import { ReminderCheckLoop, findDueReminders } from '../../src/Notifications/NotificationScheduler';
+import {
+    ReminderCheckLoop,
+    findDueReminders,
+    withoutRemindersDueBy,
+} from '../../src/Notifications/NotificationScheduler';
 import { Status } from '../../src/Statuses/Status';
 import { TaskBuilder } from '../TestingTools/TaskBuilder';
 
@@ -121,5 +125,21 @@ describe('ReminderCheckLoop', () => {
         const due = loop.tick([staleTask], after);
 
         expect(due).toEqual([]);
+    });
+});
+
+describe('withoutRemindersDueBy', () => {
+    const cutoff = moment('2024-01-15T10:00:00');
+
+    it('should return every task when there is no cutoff', () => {
+        const tasks = [taskDueAt('2024-01-15', '09:00'), taskDueAt('2024-01-15', '11:00')];
+        expect(withoutRemindersDueBy(tasks, undefined)).toEqual(tasks);
+    });
+
+    it('should drop reminders due before or exactly at the cutoff, and keep later ones', () => {
+        const before = taskDueAt('2024-01-15', '09:00');
+        const atCutoff = taskDueAt('2024-01-15', '10:00');
+        const after = taskDueAt('2024-01-15', '10:01');
+        expect(withoutRemindersDueBy([before, atCutoff, after], cutoff)).toEqual([after]);
     });
 });

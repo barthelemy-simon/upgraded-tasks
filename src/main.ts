@@ -1,4 +1,4 @@
-import { Plugin, type Reference, getLinkpath } from 'obsidian';
+import { type Notice, Plugin, type Reference, getLinkpath } from 'obsidian';
 
 import type { Task } from 'Task/Task';
 import { i18n, initializeI18n } from './i18n/i18n';
@@ -23,7 +23,7 @@ import { QueryFileDefaults } from './Query/QueryFileDefaults';
 import { LinkResolver } from './Task/LinkResolver';
 import { ObsidianLocalStorageProvider } from './Config/ObsidianLocalStorageProvider';
 import { EnableJsInTasksQueries } from './Config/EnableJsInTasksQueries';
-import { ReminderCheckLoop } from './Notifications/NotificationScheduler';
+import { ReminderCheckLoop, withoutRemindersDueBy } from './Notifications/NotificationScheduler';
 import { notifyMissedReminders, notifyRemindersDue } from './Notifications/ReminderNotifier';
 import { groupTasksByBucket } from './Notifications/NotificationBuckets';
 import { NOTIFICATIONS_VIEW_TYPE, NotificationsItemView } from './Obsidian/NotificationsItemView';
@@ -37,6 +37,10 @@ export default class TasksPlugin extends Plugin {
     public inlineRenderer: InlineRenderer | undefined;
     public queryRenderer: QueryRenderer | undefined;
     private ntfySync: NtfyReminderSync | undefined;
+    /** When a ntfy push was last tapped to open the notifications view - see {@link onNtfyPushTapped}. */
+    private ntfyPushTappedAt: Moment | undefined;
+    /** In-app reminder notices this session has shown, so a ntfy tap can hide them. */
+    private shownReminderNotices: Notice[] = [];
 
     get apiV1() {
         return tasksApiV1(this);
@@ -89,9 +93,7 @@ export default class TasksPlugin extends Plugin {
 
         this.registerView(NOTIFICATIONS_VIEW_TYPE, (leaf) => new NotificationsItemView(leaf, this, events));
         this.addRibbonIcon('bell', 'Open reminder notifications', () => void this.openNotificationsView());
-        this.registerObsidianProtocolHandler(OPEN_NOTIFICATIONS_PROTOCOL_ACTION, () => {
-            void this.openNotificationsView();
-        });
+        this.registerObsidianProtocolHandler(OPEN_NOTIFICATIONS_PROTOCOL_ACTION, () => this.onNtfyPushTapped());
 
         // Update types.json.
         this.setObsidianPropertiesTypes();
@@ -124,6 +126,26 @@ export default class TasksPlugin extends Plugin {
     }
 
     /**
+     * Opens the notifications view for a tapped ntfy push (its click URL is this plugin's protocol action),
+     * without an in-app notice repeating what the push already said. Hides any reminder notice already
+     * showing, and records the tap so that later notices skip the reminders due by then (see
+     * {@link withoutRemindersDueBy}). Both halves are needed because Obsidian may run the startup summary
+     * and the due check either before or after it handles the link, when a tap launches or resumes it.
+     */
+    private onNtfyPushTapped() {
+        this.ntfyPushTappedAt = window.moment();
+        this.shownReminderNotices.forEach((notice) => notice.hide());
+        this.shownReminderNotices = [];
+        void this.openNotificationsView();
+    }
+
+    private rememberReminderNotice(notice: Notice | undefined) {
+        if (notice) {
+            this.shownReminderNotices.push(notice);
+        }
+    }
+
+    /**
      * Registers a single periodic check for due reminders (see `Notifications/NotificationScheduler.ts`),
      * for the lifetime of the plugin. Registered unconditionally (via `registerInterval`, so Obsidian
      * auto-clears it on unload/disable) rather than only when `notificationsEnabled` is currently true, so
@@ -142,11 +164,14 @@ export default class TasksPlugin extends Plugin {
                 if (!getSettings().notificationsEnabled) {
                     return;
                 }
-                const due = checkLoop.tick(this.getTasks(), window.moment());
+                const due = withoutRemindersDueBy(
+                    checkLoop.tick(this.getTasks(), window.moment()),
+                    this.ntfyPushTappedAt,
+                );
                 if (due.length > 0) {
                     // One combined notification per check, even if several reminders came due in the same
                     // window - never one notification per task.
-                    notifyRemindersDue(
+                    const notice = notifyRemindersDue(
                         due,
                         () => {
                             window.focus(); // bring the Obsidian window itself to the foreground - revealLeaf
@@ -155,6 +180,7 @@ export default class TasksPlugin extends Plugin {
                         undefined,
                         getSettings().notificationNoticeDurationSeconds,
                     );
+                    this.rememberReminderNotice(notice);
                 }
             }, getSettings().notificationCheckIntervalSeconds * 1000),
         );
@@ -221,9 +247,12 @@ export default class TasksPlugin extends Plugin {
         }
 
         const reportIfAny = (tasks: Task[]) => {
-            const missed = groupTasksByBucket(tasks, startupMoment).overdue;
+            const missed = withoutRemindersDueBy(
+                groupTasksByBucket(tasks, startupMoment).overdue,
+                this.ntfyPushTappedAt,
+            );
             if (missed.length > 0) {
-                notifyMissedReminders(
+                const notice = notifyMissedReminders(
                     missed,
                     () => {
                         window.focus();
@@ -231,6 +260,7 @@ export default class TasksPlugin extends Plugin {
                     },
                     getSettings().notificationNoticeDurationSeconds,
                 );
+                this.rememberReminderNotice(notice);
             }
         };
 

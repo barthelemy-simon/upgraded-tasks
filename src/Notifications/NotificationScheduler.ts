@@ -53,3 +53,18 @@ export class ReminderCheckLoop {
         return due;
     }
 }
+
+/**
+ * Drops every task in {@link tasks} whose {@link Task.reminderDateTime} is at or before {@link cutoff},
+ * or returns {@link tasks} unchanged when there's no cutoff.
+ *
+ * Used with the moment a ntfy push was tapped (see `main.ts`'s protocol handler): the push already told the
+ * user about every reminder due by then, and the tap opened the notifications view that lists them, so an
+ * in-app notice for the same reminders would only repeat it.
+ */
+export function withoutRemindersDueBy(tasks: Task[], cutoff: Moment | undefined): Task[] {
+    if (cutoff === undefined) {
+        return tasks;
+    }
+    return tasks.filter((task) => task.reminderDateTime === null || task.reminderDateTime.isAfter(cutoff));
+}

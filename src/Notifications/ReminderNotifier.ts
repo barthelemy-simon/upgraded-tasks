@@ -85,13 +85,16 @@ export function chooseNotificationChannel(): 'native' | 'notice' {
  *
  * {@link titleOverride}, if given, is passed straight through to {@link buildReminderNotificationContent}
  * - see {@link notifyMissedReminders} for the other caller that uses this.
+ *
+ * Returns the `Notice` on the notice channel, so the caller can hide it early (see `main.ts`'s protocol
+ * handler), and `undefined` on the native channel.
  */
 export function notifyRemindersDue(
     tasks: Task[],
     onClick?: () => void,
     titleOverride?: string,
     noticeDurationSeconds = 0,
-): void {
+): Notice | undefined {
     const { title, body } = buildReminderNotificationContent(tasks, titleOverride);
 
     if (chooseNotificationChannel() === 'native') {
@@ -99,7 +102,7 @@ export function notifyRemindersDue(
         if (onClick) {
             notification.onclick = () => onClick();
         }
-        return;
+        return undefined;
     }
 
     // The click listener must go on a real Element, not the DocumentFragment itself: once Notice inserts
@@ -114,7 +117,7 @@ export function notifyRemindersDue(
 
     const fragment = createFragment();
     fragment.appendChild(container);
-    new Notice(fragment, noticeDurationSeconds * 1000);
+    return new Notice(fragment, noticeDurationSeconds * 1000);
 }
 
 /**
@@ -129,6 +132,10 @@ export function notifyRemindersDue(
  * while Obsidian is fully closed would otherwise be silently skipped forever, not just delayed. See
  * `main.ts`'s `checkForMissedRemindersOnStartup` for where this is actually called from, once, at startup.
  */
-export function notifyMissedReminders(tasks: Task[], onClick?: () => void, noticeDurationSeconds = 0): void {
-    notifyRemindersDue(tasks, onClick, missedReminderTitle(tasks), noticeDurationSeconds);
+export function notifyMissedReminders(
+    tasks: Task[],
+    onClick?: () => void,
+    noticeDurationSeconds = 0,
+): Notice | undefined {
+    return notifyRemindersDue(tasks, onClick, missedReminderTitle(tasks), noticeDurationSeconds);
 }
