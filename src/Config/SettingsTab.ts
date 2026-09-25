@@ -1023,6 +1023,10 @@ export class SettingsTab extends PluginSettingTab {
                                 .onChange(async (value) => {
                                     updateSettings({ reminderRoundingIncrementMinutes: Number(value) });
                                     await this.plugin.saveSettings();
+                                    // Re-evaluate the 'visible' predicate of the rounding mode row.
+                                    if (requireApiVersion('1.13.0')) {
+                                        this.refreshDomState();
+                                    }
                                 });
                         });
                     },
@@ -1030,6 +1034,7 @@ export class SettingsTab extends PluginSettingTab {
                 {
                     name: i18n.t('settings.reminder.roundingMode.name'),
                     desc: i18n.t('settings.reminder.roundingMode.description'),
+                    visible: () => getSettings().reminderRoundingIncrementMinutes > 0,
                     render: (setting) => {
                         setting.addDropdown((dropdown) => {
                             dropdown.addOption('floor', i18n.t('settings.reminder.roundingMode.options.floor'));
@@ -1736,6 +1741,7 @@ export class SettingsTab extends PluginSettingTab {
                     });
             });
 
+        let roundingMode: Setting | null = null;
         new Setting(containerEl)
             .setName(i18n.t('settings.reminder.roundingIncrement.name'))
             .setDesc(i18n.t('settings.reminder.roundingIncrement.description'))
@@ -1747,10 +1753,11 @@ export class SettingsTab extends PluginSettingTab {
                 dropdown.setValue(String(getSettings().reminderRoundingIncrementMinutes)).onChange(async (value) => {
                     updateSettings({ reminderRoundingIncrementMinutes: Number(value) });
                     await this.plugin.saveSettings();
+                    setSettingVisibility(roundingMode, Number(value) > 0);
                 });
             });
 
-        new Setting(containerEl)
+        roundingMode = new Setting(containerEl)
             .setName(i18n.t('settings.reminder.roundingMode.name'))
             .setDesc(i18n.t('settings.reminder.roundingMode.description'))
             .addDropdown((dropdown) => {
@@ -1762,6 +1769,7 @@ export class SettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 });
             });
+        setSettingVisibility(roundingMode, getSettings().reminderRoundingIncrementMinutes > 0);
 
         // ---------------------------------------------------------------------------
         new Setting(containerEl).setName(i18n.t('settings.notifications.heading')).setHeading();

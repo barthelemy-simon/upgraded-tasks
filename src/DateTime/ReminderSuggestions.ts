@@ -89,7 +89,12 @@ export function buildReminderSuggestions(
             return {
                 value: `in ${offsetPhrase(offsetMinutes)}`,
                 label: `In ${offsetPhrase(exactMinutes)} (${target.format('HH:mm')})`,
-                datalistHint: `(rounded to ${target.format('HH:mm')}, in ${offsetPhrase(exactMinutes)})`,
+                // With rounding disabled there's nothing to call "rounded", and the exact time remaining is
+                // the offset already shown as the value itself - so only the clock time is new information.
+                datalistHint:
+                    roundingIncrementMinutes > 0
+                        ? `(rounded to ${target.format('HH:mm')}, in ${offsetPhrase(exactMinutes)})`
+                        : `(at ${target.format('HH:mm')})`,
                 resolvedDate: target,
             };
         }),
