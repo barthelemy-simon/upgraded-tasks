@@ -41,6 +41,7 @@ import { CustomStatusModal } from './CustomStatusModal';
 import { GlobalQuery } from './GlobalQuery';
 import { GlobalQueryModal } from './GlobalQueryModal';
 import { PresetsSettingsUI } from './PresetsSettingsUI';
+import { CustomFieldsSettingsUI } from './CustomFieldsSettingsUI';
 import { EnableJsInTasksQueries } from './EnableJsInTasksQueries';
 
 interface SettingConfiguration {
@@ -94,6 +95,7 @@ export class SettingsTab extends PluginSettingTab {
 
     private readonly plugin: TasksPlugin;
     private readonly presetsSettingsUI;
+    private readonly customFieldsSettingsUI: CustomFieldsSettingsUI;
     private readonly events: TasksEvents;
 
     constructor({ plugin, events }: { plugin: TasksPlugin; events: TasksEvents }) {
@@ -101,6 +103,7 @@ export class SettingsTab extends PluginSettingTab {
 
         this.plugin = plugin;
         this.presetsSettingsUI = new PresetsSettingsUI(plugin, events);
+        this.customFieldsSettingsUI = new CustomFieldsSettingsUI(plugin, events);
         this.events = events;
 
         // Record the setting values now, before the user can change them.
@@ -231,6 +234,7 @@ export class SettingsTab extends PluginSettingTab {
             this.reminderGroup(),
             this.notificationsGroup(),
             this.ntfyGroup(),
+            this.customFieldsSettingsUI.getDefinitions(() => this.rebuildSettingsTab()),
             this.taskEntryGroup(),
         ];
     }
@@ -1854,6 +1858,8 @@ export class SettingsTab extends PluginSettingTab {
         for (const { name, desc, render } of this.ntfySettingItems()) {
             render(new Setting(containerEl).setName(name).setDesc(desc));
         }
+
+        this.customFieldsSettingsUI.renderSettings(containerEl, () => this.rebuildSettingsTab());
 
         // ---------------------------------------------------------------------------
         new Setting(containerEl).setName(i18n.t('settings.autoSuggest.heading')).setHeading();

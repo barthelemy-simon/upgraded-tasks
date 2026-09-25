@@ -159,3 +159,9 @@ a.tasks-edit, a.tasks-postpone {
 .task-list-item .task-block-link{
     display: none;
 }
+
+/* A custom field value inherited from the note's property, rather than written on the task line (fork). */
+.task-custom-field-inferred {
+    color: var(--text-muted);
+    font-style: italic;
+}

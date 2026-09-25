@@ -106,6 +106,7 @@ export class EditorSuggestor extends EditorSuggest<SuggestInfoWithContext> {
                 allTasks,
                 canSaveEdits,
                 taskToSuggestFor,
+                { path: file.path, frontmatter: this.app.metadataCache.getFileCache(file)?.frontmatter },
             ) ?? []
         );
     }
@@ -120,7 +121,15 @@ export class EditorSuggestor extends EditorSuggest<SuggestInfoWithContext> {
     }
 
     renderSuggestion(value: SuggestInfoWithContext, el: HTMLElement) {
-        el.setText(value.displayText);
+        if (value.displayDetail === undefined) {
+            el.setText(value.displayText);
+            return;
+        }
+        // Two lines, as in the edit modal's note dropdown (see EditTask.scss).
+        el.createDiv({ cls: 'tasks-note-choice-name', text: value.displayText });
+        if (value.displayDetail !== '') {
+            el.createDiv({ cls: 'tasks-note-choice-folder', text: value.displayDetail });
+        }
     }
 
     async selectSuggestion(value: SuggestInfoWithContext, _evt: MouseEvent | KeyboardEvent) {
