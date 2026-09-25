@@ -9,6 +9,7 @@ import { getSettings } from '../Config/Settings';
 import { GlobalFilter } from '../Config/GlobalFilter';
 import { Priority } from '../Task/Priority';
 import { TaskRegularExpressions } from '../Task/TaskRegularExpressions';
+import { explicitCustomFieldValues, inferCustomFieldValues } from '../CustomFields/CustomFieldDefinition';
 
 function getDefaultCreatedDate() {
     const { setCreatedDate } = getSettings();
@@ -39,6 +40,27 @@ function shouldUpdateCreatedDateForTask(task: Task) {
 
     return descriptionIsEmpty || needsGlobalFilterToBeAdded;
 }
+
+/**
+ * {@link taskFromLine}, plus the custom fields the task inherits from its note's properties (fork roadmap
+ * item 5) - see `inferCustomFieldValues()`. Needed because {@link taskFromLine} doesn't have the note's
+ * metadata, so couldn't infer them itself.
+ *
+ * @param frontmatter - the frontmatter of the note containing the line, if any
+ */
+export const taskFromLineWithInferredCustomFields = ({
+    line,
+    path,
+    frontmatter,
+}: {
+    line: string;
+    path: string;
+    frontmatter: Readonly<Record<string, unknown>> | undefined;
+}): Task => {
+    const task = taskFromLine({ line, path });
+    const explicitValues = explicitCustomFieldValues(task.customFields, task.inferredCustomFieldKeys);
+    return new Task({ ...task, ...inferCustomFieldValues(explicitValues, frontmatter) });
+};
 
 /**
  * Read any markdown line and treat it as a task, for the purposes of

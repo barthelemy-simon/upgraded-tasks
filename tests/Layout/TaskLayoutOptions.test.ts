@@ -7,6 +7,7 @@ describe('TaskLayoutOptions', () => {
 
         expect(options.shownComponents.join('\n')).toMatchInlineSnapshot(`
             "description
+            customFields
             id
             dependsOn
             priority
@@ -64,6 +65,7 @@ describe('TaskLayoutOptions', () => {
         const options = new TaskLayoutOptions();
         expect(options.shownComponents.join('\n')).toMatchInlineSnapshot(`
             "description
+            customFields
             id
             dependsOn
             priority
@@ -84,6 +86,7 @@ describe('TaskLayoutOptions', () => {
 
         expect(options.shownComponents.join('\n')).toMatchInlineSnapshot(`
             "description
+            customFields
             id
             dependsOn
             priority
@@ -140,7 +143,8 @@ describe('TaskLayoutOptions', () => {
         const options = new TaskLayoutOptions();
 
         expect(options.toggleableComponents.join('\n')).toMatchInlineSnapshot(`
-            "id
+            "customFields
+            id
             dependsOn
             priority
             recurrenceRule

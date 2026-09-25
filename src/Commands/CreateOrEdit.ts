@@ -2,7 +2,7 @@ import { App, Editor, MarkdownView, View } from 'obsidian';
 import { TaskModal } from '../Obsidian/TaskModal';
 import type { Task } from '../Task/Task';
 import { DateFallback } from '../DateTime/DateFallback';
-import { taskFromLine } from './CreateOrEditTaskParser';
+import { taskFromLineWithInferredCustomFields } from './CreateOrEditTaskParser';
 
 export const createOrEdit = (
     checking: boolean,
@@ -29,7 +29,8 @@ export const createOrEdit = (
     const cursorPosition = editor.getCursor();
     const lineNumber = cursorPosition.line;
     const line = editor.getLine(lineNumber);
-    const task = taskFromLine({ line, path });
+    const frontmatter = view.file ? app.metadataCache.getFileCache(view.file)?.frontmatter : undefined;
+    const task = taskFromLineWithInferredCustomFields({ line, path, frontmatter });
 
     const onSubmit = (updatedTasks: Task[]): void => {
         const serialized = DateFallback.removeInferredStatusIfNeeded(task, updatedTasks)

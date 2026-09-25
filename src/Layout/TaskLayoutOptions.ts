@@ -7,6 +7,8 @@
 export enum TaskLayoutComponent {
     // NEW_TASK_FIELD_EDIT_REQUIRED
     Description = 'description',
+    // Straight after the description, so a task reads 'Write report 📁 [[Website]] 📅 2026-10-01'.
+    CustomFields = 'customFields',
     Id = 'id',
     DependsOn = 'dependsOn',
     Priority = 'priority',
@@ -36,6 +38,8 @@ export const taskLayoutComponents = Object.values(TaskLayoutComponent);
 export class TaskLayoutOptions {
     private visible: { [component: string]: boolean } = {};
     private tagsVisible: boolean = true;
+    /** Lower-cased keys of custom fields hidden one by one, with `hide field <key>`. */
+    private readonly hiddenCustomFieldKeys = new Set<string>();
 
     constructor() {
         taskLayoutComponents.forEach((component) => {
@@ -61,6 +65,21 @@ export class TaskLayoutOptions {
 
     public setTagsVisibility(visibility: boolean) {
         this.tagsVisible = visibility;
+    }
+
+    /**
+     * Whether one custom field is shown. `hide custom fields` hides them all, whatever this says.
+     */
+    public isCustomFieldShown(key: string) {
+        return !this.hiddenCustomFieldKeys.has(key.toLowerCase());
+    }
+
+    public setCustomFieldVisibility(key: string, visible: boolean) {
+        if (visible) {
+            this.hiddenCustomFieldKeys.delete(key.toLowerCase());
+        } else {
+            this.hiddenCustomFieldKeys.add(key.toLowerCase());
+        }
     }
 
     public get shownComponents() {
@@ -109,6 +128,7 @@ export function parseTaskShowHideOptions(taskLayoutOptions: TaskLayoutOptions, o
         // Alphabetical order
         ['cancelled date', TaskLayoutComponent.CancelledDate],
         ['created date', TaskLayoutComponent.CreatedDate],
+        ['custom fields', TaskLayoutComponent.CustomFields],
         ['depends on', TaskLayoutComponent.DependsOn],
         ['done date', TaskLayoutComponent.DoneDate],
         ['due date', TaskLayoutComponent.DueDate],
@@ -130,6 +150,13 @@ export function parseTaskShowHideOptions(taskLayoutOptions: TaskLayoutOptions, o
 
     if (option.startsWith('tags')) {
         taskLayoutOptions.setTagsVisibility(visible);
+        return true;
+    }
+
+    // 'hide field project': one custom field (fork roadmap item 5). An unknown key just hides nothing.
+    const customFieldMatch = option.trim().match(/^field ([a-z][a-z0-9_-]*)$/);
+    if (customFieldMatch) {
+        taskLayoutOptions.setCustomFieldVisibility(customFieldMatch[1], visible);
         return true;
     }
 
