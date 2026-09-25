@@ -1,11 +1,5 @@
-import { ButtonComponent, Platform } from 'obsidian';
-import { TASK_FORMATS } from '../../Config/Settings';
 import type { Task } from '../../Task/Task';
-import { DateFallback } from '../../DateTime/DateFallback';
-import type { TaskEditingInstruction } from '../EditInstructions/TaskEditingInstruction';
-import { RemoveReminderTime } from '../EditInstructions/ReminderInstructions';
-import { RemoveScheduledDateAndReminder, SetSchedule } from '../EditInstructions/ScheduleInstructions';
-import ScheduleEditor from '../ScheduleEditor.svelte';
+import { ScheduleForm } from './ScheduleForm';
 import type { TaskSaver } from './TaskEditingMenu';
 import { defaultTaskSaver } from './TaskEditingMenu';
 
@@ -15,51 +9,30 @@ import { defaultTaskSaver } from './TaskEditingMenu';
 export type PopoverAnchor = HTMLElement | { x: number; y: number };
 
 /**
- * The standalone popup counterpart to the edit modal's embedded "Schedule" section - same text input, date
- * picker, time picker and two remove buttons ({@link ScheduleEditor}), positioned next to whatever element
- * or point opened it, like the Scheduled Date pill's own flatpickr popover ({@link promptForDate}) - rather
- * than Obsidian's `Modal` (centred on the page, dimmed background, focus-trapped), which is far more
- * "present" than a single field warrants. Replaces the former `ScheduleDialog`.
+ * The desktop host for the standalone Schedule form ({@link ScheduleForm}), positioned next to whatever
+ * element or point opened it, like the Scheduled Date pill's own flatpickr popover ({@link promptForDate}) -
+ * rather than Obsidian's `Modal` (centred on the page, dimmed background, focus-trapped), which is far more
+ * "present" than a single field warrants on a desktop screen. On mobile, {@link openScheduleEditor} opens
+ * {@link ScheduleModal} instead: a floating box anchored to a small pill doesn't suit a phone, where the
+ * on-screen keyboard resizes and scrolls the viewport under it.
  *
  * Closed by Escape, the Cancel/Apply buttons, or a click outside the popover - a click outside applies
  * whatever is currently pending (if valid), the same auto-apply-on-close behaviour {@link promptForDate}'s
  * flatpickr calendar already has, so dismissing it isn't itself a silent way to lose an edit. Escape/Cancel
- * discard instead, matching `Modal`'s own previous behaviour.
- *
- * Scrolling or resizing the window also closes it on desktop, since the anchor it's positioned against has
- * moved. Not on mobile: there, opening the on-screen keyboard resizes the viewport and scrolls the focused
- * input into view, so the popover would close itself the moment it opened (a visible flicker). On mobile it
- * also doesn't focus the text input on open, so the keyboard only comes up when the input is tapped.
- *
- * Opened from: left-clicking an existing Reminder Time pill ({@link TaskLineRenderer}), the Scheduled Date
- * picker's "Add a reminder…" button ({@link promptForDate}), the Scheduled Date right-click menu's "Add a
- * reminder…" item ({@link DateMenu}), and the Reminder Notifications view's own reminder pill.
+ * discard instead. Scrolling (outside the popover) or resizing the window also closes it, since the anchor
+ * it's positioned against has moved.
  */
 export class SchedulePopover {
     private readonly containerEl: HTMLDivElement;
-    private component: ScheduleEditor | undefined;
-    private scheduledDate: string;
-    private reminderTime: string;
-    private isValid = true;
+    private readonly form: ScheduleForm;
     private closed = false;
 
-    constructor(
-        anchor: PopoverAnchor,
-        private readonly task: Task,
-        private readonly taskSaver: TaskSaver = defaultTaskSaver,
-    ) {
-        this.scheduledDate = task.scheduledDate?.format('YYYY-MM-DD') ?? '';
-        this.reminderTime = task.reminderTime ?? '';
-
+    constructor(anchor: PopoverAnchor, task: Task, taskSaver: TaskSaver = defaultTaskSaver) {
         this.containerEl = activeDocument.body.createDiv({ cls: 'tasks-schedule-popover' });
         this.position(anchor);
-        this.render();
+        this.form = new ScheduleForm(this.containerEl, task, taskSaver, () => this.close());
         this.clampToViewport();
-
-        if (!Platform.isMobile) {
-            const input = this.containerEl.querySelector<HTMLInputElement>('#schedule');
-            input?.focus();
-        }
+        this.form.focusInput();
 
         // Deferred so the very click that opened this popover (still bubbling up to `document`) doesn't
         // immediately close it again.
@@ -85,7 +58,7 @@ export class SchedulePopover {
         }
     }
 
-    /** Nudges the popover back on-screen once its real size is known (only possible after render()) - flips
+    /** Nudges the popover back on-screen once its real size is known (only possible after rendering) - flips
      *  above the anchor if there's no room below, and pulls it left if it would overhang the right edge. */
     private clampToViewport(): void {
         const rect = this.containerEl.getBoundingClientRect();
@@ -99,99 +72,23 @@ export class SchedulePopover {
         }
     }
 
-    private render(): void {
-        const { scheduledDateSymbol, reminderTimeSymbol } = TASK_FORMATS.tasksPluginEmoji.taskSerializer.symbols;
-
-        // Same section class EditTask.svelte uses, so this popup's pickers/inputs pick up the exact same
-        // styling and grid layout (see ScheduleEditor.scss/EditTask.scss) as the embedded modal usage.
-        const section = this.containerEl.createDiv({ cls: 'tasks-modal-dates-section' });
-
-        this.component = new ScheduleEditor({
-            target: section,
-            props: {
-                scheduledDate: this.scheduledDate,
-                reminderTime: this.reminderTime,
-                scheduledDateSymbol,
-                reminderTimeSymbol,
-                accesskey: null,
-                originalScheduledDate: this.task.scheduledDate,
-                onRemoveScheduledDate: () => this.applyAndClose(new RemoveScheduledDateAndReminder(this.task)),
-                onRemoveReminderTime: () => this.applyAndClose(new RemoveReminderTime()),
-                onScheduledDateChange: (value: string) => {
-                    this.scheduledDate = value;
-                },
-                onReminderTimeChange: (value: string) => {
-                    this.reminderTime = value;
-                },
-                onValidityChange: (value: boolean) => {
-                    this.isValid = value;
-                },
-            },
-        });
-
-        const buttonRow = this.containerEl.createDiv({ cls: 'tasks-schedule-popover-buttons' });
-        new ButtonComponent(buttonRow).setButtonText('Cancel').onClick(this.onCancel);
-        new ButtonComponent(buttonRow)
-            .setButtonText('Apply')
-            .setCta()
-            .onClick(() => void this.apply());
-
-        this.containerEl.addEventListener('keydown', (ev: KeyboardEvent) => {
-            if (ev.key === 'Enter') {
-                ev.preventDefault();
-                void this.apply();
-            } else if (ev.key === 'Escape') {
-                ev.preventDefault();
-                this.onCancel();
-            }
-        });
-    }
-
     private onOutsideMouseDown = (ev: MouseEvent): void => {
         if (!this.containerEl.contains(ev.target as Node)) {
-            void this.apply();
+            void this.form.apply();
         }
-    };
-
-    private onCancel = (): void => {
-        this.close();
     };
 
     private onScroll = (ev: Event): void => {
         // Scrolling inside the popover itself (e.g. a long suggestion list) doesn't move its anchor.
-        if (Platform.isMobile || this.containerEl.contains(ev.target as Node)) {
+        if (this.containerEl.contains(ev.target as Node)) {
             return;
         }
         this.close();
     };
 
     private onResize = (): void => {
-        if (Platform.isMobile) {
-            // Most likely the on-screen keyboard opening or closing: keep the popover, but on-screen.
-            this.clampToViewport();
-            return;
-        }
         this.close();
     };
-
-    private async apply(): Promise<void> {
-        if (!this.isValid) {
-            this.close();
-            return;
-        }
-        const scheduledDate = this.scheduledDate ? window.moment(this.scheduledDate) : null;
-        const reminderTime = this.reminderTime || null;
-        await this.applyAndClose(new SetSchedule(scheduledDate, reminderTime));
-    }
-
-    private async applyAndClose(instruction: TaskEditingInstruction): Promise<void> {
-        // See the equivalent fix-up in TaskEditingMenu.getMenuItemCallback for why this is needed: SetSchedule
-        // can move scheduledDate onto a different day than a filename-inferred one, and without this the
-        // stale scheduledDateIsInferred flag would make the new date silently vanish on save.
-        const newTasks = DateFallback.removeInferredStatusIfNeeded(this.task, instruction.apply(this.task));
-        await this.taskSaver(this.task, newTasks);
-        this.close();
-    }
 
     private close(): void {
         if (this.closed) {
@@ -201,8 +98,7 @@ export class SchedulePopover {
         activeDocument.removeEventListener('mousedown', this.onOutsideMouseDown, true);
         window.removeEventListener('scroll', this.onScroll, true);
         window.removeEventListener('resize', this.onResize);
-        this.component?.$destroy();
-        this.component = undefined;
+        this.form.destroy();
         this.containerEl.remove();
     }
 }

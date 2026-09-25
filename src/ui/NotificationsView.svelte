@@ -8,7 +8,7 @@
         type NotificationBucket,
     } from '../Notifications/NotificationBuckets';
     import { ReminderMenu } from './Menus/ReminderMenu';
-    import { SchedulePopover } from './Menus/SchedulePopover';
+    import { openScheduleEditor } from './Menus/ScheduleModal';
     import { defaultTaskSaver, showMenu, type TaskSaver } from './Menus/TaskEditingMenu';
 
     // Passed in as props by NotificationsItemView.onOpen() / its onCacheUpdate handler ($set):
@@ -73,7 +73,7 @@
     // Schedule popover, anchored to the pill itself.
     function onSchedulePillClick(ev: MouseEvent, task: Task) {
         ev.stopPropagation();
-        new SchedulePopover(ev.currentTarget as HTMLElement, task, taskSaver);
+        openScheduleEditor(ev.currentTarget as HTMLElement, task, taskSaver);
     }
 
     // Always two lines: a day/clock line ("today, 16:00" / "tomorrow, 16:00" / "yesterday, 16:00" / "26/10,

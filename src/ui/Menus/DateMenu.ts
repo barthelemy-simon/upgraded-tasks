@@ -1,7 +1,7 @@
 import type { Task } from '../../Task/Task';
 import { type AllTaskDateFields, isAHappensDate } from '../../DateTime/DateFieldTypes';
 import { allHappensDateInstructions, allLifeCycleDateInstructions } from '../EditInstructions/DateInstructions';
-import { SchedulePopover } from './SchedulePopover';
+import { openScheduleEditor } from './ScheduleModal';
 import { TaskEditingMenu, type TaskSaver, defaultTaskSaver } from './TaskEditingMenu';
 
 export class DateMenu extends TaskEditingMenu {
@@ -30,7 +30,7 @@ export class DateMenu extends TaskEditingMenu {
                             evt instanceof MouseEvent
                                 ? { x: evt.clientX, y: evt.clientY }
                                 : (evt.target as HTMLElement);
-                        new SchedulePopover(anchor, task, taskSaver);
+                        openScheduleEditor(anchor, task, taskSaver);
                     });
                 }
             });
