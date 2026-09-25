@@ -1,0 +1,28 @@
+// The mobile Schedule modal (ScheduleModal.ts), which holds the same ScheduleForm as the desktop popover.
+
+// Cancel/Apply stay visible, like the edit modal's own button bar (see .tasks-modal-button-section in
+// EditTask.scss): if the form is ever taller than the space left, it's the form that scrolls.
+.tasks-schedule-modal .tasks-schedule-popover-buttons {
+    position: sticky;
+    bottom: 0;
+    background-color: var(--modal-background);
+    margin-top: 0;
+    padding-top: var(--size-4-3);
+    padding-bottom: var(--size-4-3);
+}
+
+// Obsidian centres the modal vertically, but the on-screen keyboard covers the bottom of the screen, and
+// with it the lower half of a centred modal - Cancel/Apply included. So while the Schedule text input has
+// focus (the one field here that brings the keyboard up - the date/time pickers don't), move the modal to
+// the top, and cap its height to the part of the screen the keyboard leaves visible.
+// --tasks-visible-top/--tasks-visible-height are kept up to date by ScheduleModal.ts from
+// window.visualViewport: on iOS the keyboard shrinks (and can scroll) only the visual viewport, which no
+// vh/% unit reflects.
+.is-mobile .modal-container:has(.tasks-schedule-modal input[type='text']:focus) {
+    align-items: flex-start;
+
+    .tasks-schedule-modal {
+        margin-top: calc(var(--tasks-visible-top, 0px) + var(--size-4-4));
+        max-height: calc(var(--tasks-visible-height, 100vh) - 2 * var(--size-4-4));
+    }
+}

@@ -5,6 +5,20 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.4.6 — upstream base `8.4.0`
+
+**Schedule modal stays usable with the keyboard up.** PATCH: a mobile UI fix, no scope added.
+
+- On mobile, the Schedule modal is centred on the screen, so when its text input was tapped the on-screen
+  keyboard covered its lower half, Cancel/Apply included. While that input has focus, the modal now moves
+  to the top of the screen and is capped to the part the keyboard leaves visible (tracked from
+  `window.visualViewport`, since on iOS the keyboard doesn't change `vh`). Cancel/Apply are sticky at the
+  bottom, like the edit modal's own button bar (`ScheduleModal.scss`).
+- Cancel/Apply, and the Schedule form's two Remove buttons, keep focus in the text input when tapped, as
+  the edit modal's buttons already do. Otherwise the tap would drop the keyboard, move the modal back down
+  mid-tap, and miss.
+- `CLAUDE.md`: new roadmap item 6, a reorderable task edit modal.
+
 ## 4.4.5 — upstream base `8.4.0`
 
 **Schedule editor opens as a modal on mobile.** PATCH: a mobile UI fix, no scope added.

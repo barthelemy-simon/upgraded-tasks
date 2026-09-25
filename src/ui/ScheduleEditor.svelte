@@ -81,8 +81,12 @@
     // suggestions are offered (not date presets like 'tomorrow') since those are the values a native
     // datalist popup helps with most - a bare clock time or offset is otherwise easy to mistype.
     function refreshSuggestions() {
-        const { reminderPresetTimes, reminderRelativeOffsetsMinutes, reminderRoundingIncrementMinutes, reminderRoundingMode } =
-            getSettings();
+        const {
+            reminderPresetTimes,
+            reminderRelativeOffsetsMinutes,
+            reminderRoundingIncrementMinutes,
+            reminderRoundingMode,
+        } = getSettings();
         const { presetTimes, relativeOffsets } = buildReminderSuggestions(
             reminderPresetTimes,
             reminderRelativeOffsetsMinutes,
@@ -271,7 +275,9 @@
 {:else if reminderTime === ''}
     <code class="tasks-modal-parsed-date"><i>no reminder</i></code>
 {:else}
-    <code class="tasks-modal-parsed-date">Reminder fires at {reminderTime}{scheduledDate ? ` on ${scheduledDate}` : ''}</code>
+    <code class="tasks-modal-parsed-date"
+        >Reminder fires at {reminderTime}{scheduledDate ? ` on ${scheduledDate}` : ''}</code
+    >
 {/if}
 
 {#if isOrphaned}
@@ -281,8 +287,9 @@
 {/if}
 
 <div class="tasks-modal-schedule-buttons">
-    <button type="button" on:click={onRemoveScheduledDate}>Remove scheduled date</button>
-    <button type="button" on:click={onRemoveReminderTime}>Remove reminder</button>
+    <!-- mousedown|preventDefault: see the comment above .tasks-modal-button-section in EditTask.svelte. -->
+    <button type="button" on:click={onRemoveScheduledDate} on:mousedown|preventDefault>Remove scheduled date</button>
+    <button type="button" on:click={onRemoveReminderTime} on:mousedown|preventDefault>Remove reminder</button>
 </div>
 
 <style>
