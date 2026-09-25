@@ -5,6 +5,18 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.4.7 — upstream base `8.4.0`
+
+**On mobile, tapping a reminder pill opens the quick-pick menu.** PATCH: a mobile UI fix, no new
+capability (the menu and the editor both already existed).
+
+- On mobile, tapping a Reminder Time pill (in a note, or the ⏰ in the Notifications view) now opens the
+  quick-pick reminder menu, which used to need a long-press. A quick pick is what's usually wanted, and a
+  long-press is slow. Desktop is unchanged: click opens the Schedule editor, right-click the menu
+  (`ReminderMenu.ts`'s `onReminderPillClick`, used by both places).
+- The reminder menu has a new "Custom reminder…" item, on desktop and mobile, which opens the full Schedule
+  editor: the modal on mobile, the popover at the click on desktop.
+
 ## 4.4.6 — upstream base `8.4.0`
 
 **Schedule modal stays usable with the keyboard up.** PATCH: a mobile UI fix, no scope added.

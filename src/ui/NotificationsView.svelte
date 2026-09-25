@@ -7,8 +7,7 @@
         NOTIFICATION_BUCKET_ORDER,
         type NotificationBucket,
     } from '../Notifications/NotificationBuckets';
-    import { ReminderMenu } from './Menus/ReminderMenu';
-    import { openScheduleEditor } from './Menus/ScheduleModal';
+    import { ReminderMenu, onReminderPillClick } from './Menus/ReminderMenu';
     import { defaultTaskSaver, showMenu, type TaskSaver } from './Menus/TaskEditingMenu';
 
     // Passed in as props by NotificationsItemView.onOpen() / its onCacheUpdate handler ($set):
@@ -69,11 +68,10 @@
         showMenu(ev, new ReminderMenu(task, taskSaver));
     }
 
-    // The alarm-clock pill mirrors the rendered reminder pill's left-click behaviour - opens the same
-    // Schedule popover, anchored to the pill itself.
+    // The alarm-clock pill does exactly what a rendered reminder pill does on click (see onReminderPillClick):
+    // the Schedule editor on desktop, the quick-pick menu on mobile.
     function onSchedulePillClick(ev: MouseEvent, task: Task) {
-        ev.stopPropagation();
-        openScheduleEditor(ev.currentTarget as HTMLElement, task, taskSaver);
+        onReminderPillClick(ev, ev.currentTarget as HTMLElement, task, taskSaver);
     }
 
     // Always two lines: a day/clock line ("today, 16:00" / "tomorrow, 16:00" / "yesterday, 16:00" / "26/10,
@@ -130,10 +128,7 @@
                                         class="tasks-notifications-open"
                                         on:click={() => onOpenTask(task)}
                                     >
-                                        <span
-                                            class="tasks-notifications-description"
-                                            use:renderDescription={task}
-                                        ></span>
+                                        <span class="tasks-notifications-description" use:renderDescription={task} />
                                         <span class="tasks-notifications-time">{@html formatReminderTime(task)}</span>
                                     </button>
                                     <button
