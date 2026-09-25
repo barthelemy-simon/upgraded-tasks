@@ -5,6 +5,20 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.5.0 — upstream base `8.4.0`
+
+**Settings for in-app reminder notices and opening tasks from the Notifications view.** MINOR: two small
+new settings. No on-disk syntax change.
+
+- New setting "In-app notification duration (seconds)", default 10: how long a reminder `Notice` stays on
+  screen (on mobile, or desktop without OS notifications). It previously always stayed until tapped,
+  covering the top of the note. `0` keeps the old behaviour. Desktop OS notifications stay persistent.
+- New setting "Open task in", for clicking a task in the Notifications view: its tab if already open,
+  otherwise a new tab (default); the notifications tab itself; or always a new tab (the old behaviour).
+  Whichever tab it opens in becomes the active one.
+  `openTaskAtSourceLocation` (upstream's `QuickSearchTasksModal.ts`) gained an optional leaf-chooser
+  parameter for this; its default is unchanged.
+
 ## 4.4.8 — upstream base `8.4.0`
 
 **Notifications view: the reminder time works like the ⏰ pill.** PATCH: UI fix, no scope added.

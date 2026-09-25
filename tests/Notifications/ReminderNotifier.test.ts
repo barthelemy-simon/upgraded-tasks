@@ -130,6 +130,26 @@ describe('notifyRemindersDue', () => {
         expect(duration).toEqual(0);
     });
 
+    it('should pass a given notice duration to Notice, in milliseconds', () => {
+        Platform.isDesktopApp = false;
+
+        const task = new TaskBuilder().description('Buy milk').build();
+        notifyRemindersDue([task], undefined, undefined, 10);
+
+        const [, duration] = MockedNotice.mock.calls[0];
+        expect(duration).toEqual(10000);
+    });
+
+    it('should use the given notice duration for the missed-reminders summary too', () => {
+        Platform.isDesktopApp = false;
+
+        const task = new TaskBuilder().description('Buy milk').build();
+        notifyMissedReminders([task], undefined, 5);
+
+        const [, duration] = MockedNotice.mock.calls[0];
+        expect(duration).toEqual(5000);
+    });
+
     it('should fire exactly one Notice for several simultaneously-due tasks, not one each', () => {
         Platform.isDesktopApp = false;
 

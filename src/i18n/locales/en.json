@@ -237,6 +237,19 @@
         "description": "How often, in seconds, to check for due reminders.",
         "name": "Check every (seconds)"
       },
+      "noticeDurationSeconds": {
+        "description": "How long, in seconds, a reminder shown inside Obsidian (on mobile, or on desktop without OS notifications) stays on screen. 0 keeps it until you tap it. Desktop OS notifications always stay until dismissed.",
+        "name": "In-app notification duration (seconds)"
+      },
+      "openTaskIn": {
+        "description": "Where to open a task's note when you click it in the Reminder notifications view.",
+        "name": "Open task in",
+        "options": {
+          "current": "The notifications tab (replacing it)",
+          "new": "A new tab",
+          "reuse": "Its tab if already open, otherwise a new tab"
+        }
+      },
       "ntfy": {
         "heading": "Push notifications (ntfy)",
         "enabled": {

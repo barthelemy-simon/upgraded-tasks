@@ -3,7 +3,16 @@
  * See also `src/Commands/QuickSearchTasks.ts`.
  */
 
-import { type App, Component, MarkdownRenderer, Notice, SuggestModal, setIcon } from 'obsidian';
+import {
+    type App,
+    Component,
+    MarkdownRenderer,
+    Notice,
+    SuggestModal,
+    type TFile,
+    type WorkspaceLeaf,
+    setIcon,
+} from 'obsidian';
 import type { Task } from '../Task/Task';
 import { TASK_FORMATS, getSettings, updateSettings } from '../Config/Settings';
 import { TaskLayoutComponent } from '../Layout/TaskLayoutOptions';
@@ -40,7 +49,15 @@ export function taskSearchMetadataText(task: Task): string[] {
         .filter((text) => text !== '');
 }
 
-export async function openTaskAtSourceLocation(task: Task, app: App): Promise<void> {
+/**
+ * Opens {@link task}'s note, scrolled to its line. {@link chooseLeaf} picks the tab to open it in; by
+ * default, the active tab if it's a navigable one (a note), otherwise a new tab (`getLeaf(false)`).
+ */
+export async function openTaskAtSourceLocation(
+    task: Task,
+    app: App,
+    chooseLeaf: (file: TFile) => WorkspaceLeaf = () => app.workspace.getLeaf(false),
+): Promise<void> {
     const result = await getTaskLineAndFile(task, app.vault);
     if (result === undefined) {
         // The source file or task can change after the task cache was last refreshed.
@@ -52,7 +69,7 @@ export async function openTaskAtSourceLocation(task: Task, app: App): Promise<vo
 
     const [line, file] = result;
     try {
-        await app.workspace.getLeaf(false).openFile(file, { eState: { line } });
+        await chooseLeaf(file).openFile(file, { eState: { line } });
     } catch (error) {
         console.error('Tasks: Could not open task source.', error);
         new Notice('Tasks: Could not open task source.');

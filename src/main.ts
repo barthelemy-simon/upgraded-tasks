@@ -146,10 +146,15 @@ export default class TasksPlugin extends Plugin {
                 if (due.length > 0) {
                     // One combined notification per check, even if several reminders came due in the same
                     // window - never one notification per task.
-                    notifyRemindersDue(due, () => {
-                        window.focus(); // bring the Obsidian window itself to the foreground - revealLeaf
-                        void this.openNotificationsView(); // alone only changes the active tab inside the app
-                    });
+                    notifyRemindersDue(
+                        due,
+                        () => {
+                            window.focus(); // bring the Obsidian window itself to the foreground - revealLeaf
+                            void this.openNotificationsView(); // alone only changes the active tab inside the app
+                        },
+                        undefined,
+                        getSettings().notificationNoticeDurationSeconds,
+                    );
                 }
             }, getSettings().notificationCheckIntervalSeconds * 1000),
         );
@@ -218,10 +223,14 @@ export default class TasksPlugin extends Plugin {
         const reportIfAny = (tasks: Task[]) => {
             const missed = groupTasksByBucket(tasks, startupMoment).overdue;
             if (missed.length > 0) {
-                notifyMissedReminders(missed, () => {
-                    window.focus();
-                    void this.openNotificationsView();
-                });
+                notifyMissedReminders(
+                    missed,
+                    () => {
+                        window.focus();
+                        void this.openNotificationsView();
+                    },
+                    getSettings().notificationNoticeDurationSeconds,
+                );
             }
         };
 
