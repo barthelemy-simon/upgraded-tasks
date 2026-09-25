@@ -199,6 +199,17 @@ describe('notifyRemindersDue', () => {
         expect(onClick).toHaveBeenCalledTimes(1);
     });
 
+    it('should return the Notice on the notice channel, and nothing on the native channel', () => {
+        const task = new TaskBuilder().description('Buy milk').build();
+
+        Platform.isDesktopApp = false;
+        expect(notifyRemindersDue([task])).toBe(MockedNotice.mock.instances[0]);
+
+        Platform.isDesktopApp = true;
+        (global as any).Notification = jest.fn();
+        expect(notifyRemindersDue([task])).toBeUndefined();
+    });
+
     it('should not throw when no onClick is given for the notice channel', () => {
         Platform.isDesktopApp = false;
 

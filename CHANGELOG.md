@@ -5,6 +5,15 @@ Tracks this fork's own changes on top of each upstream base. See `CLAUDE.md` for
 in `manifest.json`/`package.json`) and the upstream-sync process. Upstream's own changelog is not duplicated
 here — see <https://github.com/obsidian-tasks-group/obsidian-tasks/releases>.
 
+## 4.5.1 — upstream base `8.4.0`
+
+**No in-app notice after tapping a ntfy push.** PATCH: removes a duplicate alert, no scope added.
+
+- Tapping a ntfy push opens the Notifications view, and Obsidian used to show an in-app notice for the
+  same reminders on top of it: the startup summary on a cold start, or the due check when resuming. Now
+  the tap hides any reminder notice already showing, and later notices skip reminders due by the moment
+  of the tap. Reminders due after the tap still get their notice.
+
 ## 4.5.0 — upstream base `8.4.0`
 
 **Settings for in-app reminder notices and opening tasks from the Notifications view.** MINOR: two small
