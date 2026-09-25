@@ -296,6 +296,12 @@ Not on the roadmap yet; to come back to later.
   happens to expose a badge or local-notification plugin to plugin code (`window.Capacitor?.Plugins`),
   which would be the only in-app route. Meanwhile the ntfy push (roadmap item 4, Phase 2) comes from the
   ntfy app, so Android launchers may show a dot on *ntfy's* icon while a reminder is unread.
+- **A quick way to add a reminder to a task that has none.** Parked 2026-09-24, food for thought only - no
+  design decided. Today, adding one takes the edit modal, or the Scheduled date pill's "Add a reminder…".
+  One idea: always render a ⏰ pill on a task line, even with no reminder set (shown faintly, say), which
+  opens the same quick-pick `ReminderMenu` / Schedule editor as an existing reminder's pill. To weigh: the
+  visual noise of a pill on every task line (maybe only on hover on desktop, or behind a setting), and how
+  it fits Tasks' layout options (`TaskLayoutComponent`, `hide` instructions).
 
 ## Build
 
