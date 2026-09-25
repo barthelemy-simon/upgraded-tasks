@@ -17,7 +17,15 @@ import { TaskRegularExpressions } from '../Task/TaskRegularExpressions';
 import { searchForCandidateTasksForDependency } from '../ui/DependencyHelpers';
 import { escapeRegExp } from '../lib/RegExpTools';
 import { StatusType } from '../Statuses/StatusConfiguration';
-import type { SuggestInfo, SuggestionBuilder } from '.';
+import {
+    type CustomFieldDefinition,
+    customFieldDefaultFromFrontmatter,
+    customFieldValueForStoring,
+    getCustomFieldDefinitions,
+} from '../CustomFields/CustomFieldDefinition';
+import { builtInFieldSymbols, validateCustomFieldValue } from '../CustomFields/CustomFieldValidation';
+import { noteChoicesFor } from '../CustomFields/NoteChoices';
+import type { SuggestInfo, SuggestionBuilder, SuggestorNoteContext } from '.';
 
 /**
  * Recommended default value to pass in to {@link makeDefaultSuggestionBuilder} maxGenericSuggestions parameter
@@ -55,6 +63,7 @@ export function makeDefaultSuggestionBuilder(
         allTasks: Task[],
         canSaveEdits: boolean,
         taskToSuggestFor?: Task,
+        note?: SuggestorNoteContext,
     ): SuggestInfo[] => {
         let suggestions: SuggestInfo[] = [];
 
@@ -83,6 +92,11 @@ export function makeDefaultSuggestionBuilder(
                 addDependsOnSuggestions(symbols.dependsOnSymbol, allTasks, parameters, taskToSuggestFor),
             );
         }
+
+        // add custom field value suggestions if relevant
+        suggestions = suggestions.concat(
+            addCustomFieldValueSuggestions(maxGenericSuggestions, parameters, allTasks, note),
+        );
 
         // add on completion suggestions if relevant
         suggestions = suggestions.concat(
@@ -144,6 +158,9 @@ function addTaskPropertySuggestions(
     addField(genericSuggestions, line, symbols.startDateSymbol, 'start date');
     addField(genericSuggestions, line, symbols.scheduledDateSymbol, 'scheduled date');
     addField(genericSuggestions, line, symbols.reminderTimeSymbol, 'reminder time');
+    for (const definition of getCustomFieldDefinitions()) {
+        addField(genericSuggestions, line, customFieldSymbol(definition, parameters.dataviewMode), definition.label);
+    }
 
     addPrioritySuggestions(genericSuggestions, symbols, parameters);
     addField(genericSuggestions, line, symbols.recurrenceSymbol, 'recurring (repeat)');
@@ -434,6 +451,115 @@ function addOnCompletionOptionSuggestions(
     return results;
 }
 
+/**
+ * The text that starts a custom field on a task line: its symbol, or `key::` in the Dataview format.
+ */
+function customFieldSymbol(definition: CustomFieldDefinition, dataviewMode: boolean) {
+    return dataviewMode ? `${definition.key}::` : definition.symbol;
+}
+
+/*
+ * If the cursor is in a custom field's value, suggest values for it: first the default from the note's
+ * frontmatter, if the field has one, then the values most used on other tasks.
+ *
+ * Nothing is suggested once a note-link value starts with '[[', so that Obsidian's own link suggestions
+ * take over.
+ */
+function addCustomFieldValueSuggestions(
+    maxGenericSuggestions: number,
+    parameters: SuggestorParameters,
+    allTasks: Task[],
+    note: SuggestorNoteContext | undefined,
+): SuggestInfo[] {
+    const results: SuggestInfo[] = [];
+    const definitions = getCustomFieldDefinitions();
+    if (definitions.length === 0) {
+        return results;
+    }
+
+    // As in addDependsOnSuggestions(), the value ends where the next field begins.
+    const valuePattern = parameters.dataviewMode
+        ? /[^()[\]]*/.source
+        : `(?:(?!${[...builtInFieldSymbols(), ...definitions.map((d) => d.symbol)].map(escapeRegExp).join('|')}).)*`;
+
+    for (const definition of definitions) {
+        const symbol = customFieldSymbol(definition, parameters.dataviewMode);
+        const regex = new RegExp(`(${escapeRegExp(symbol)})\uFE0F? *(${valuePattern})`, 'g');
+        const match = matchIfCursorInRegex(regex, parameters);
+        if (!match) {
+            continue;
+        }
+
+        const typedText = match[2].trim();
+        if (typedText.length < parameters.settings.autoSuggestMinMatch) {
+            continue;
+        }
+        if (definition.type === 'noteLink' && typedText.startsWith('[[')) {
+            continue;
+        }
+
+        const isValid = (value: string) =>
+            validateCustomFieldValue(definition, value, definitions, parameters.dataviewMode) === null;
+        const propertyValue = customFieldDefaultFromFrontmatter(definition, note?.frontmatter);
+
+        if (definition.type === 'noteLink') {
+            // Each note once, however other tasks link to it: its name, with its folder on a second line.
+            // Only notes already used (or the note's default): Obsidian's own '[[' suggestions list the rest.
+            const preferred = propertyValue === null ? [] : [propertyValue];
+            const choices = noteChoicesFor(definition, allTasks, [], typedText, maxGenericSuggestions, preferred);
+            for (const choice of choices) {
+                const value = customFieldValueForStoring(definition, choice.linkpath, note?.path ?? '');
+                if (value === null || !isValid(value) || choice.name.toLowerCase() === typedText.toLowerCase()) {
+                    continue;
+                }
+                results.push({
+                    suggestionType: 'match',
+                    displayText: choice.name,
+                    displayDetail: choice.folder,
+                    appendText: `${symbol} ${value}` + parameters.postfix,
+                    insertAt: match.index,
+                    insertSkip: calculateSkipValueForMatch(match[0], parameters),
+                });
+            }
+            continue;
+        }
+
+        // Values used on other tasks, most used first.
+        const counts = new Map<string, number>();
+        for (const task of allTasks) {
+            const value = task.customFields[definition.key];
+            if (value !== undefined) {
+                counts.set(value, (counts.get(value) ?? 0) + 1);
+            }
+        }
+        const usedValues = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([value]) => value);
+
+        const defaultValue = propertyValue;
+        const candidates = [...new Set([...(defaultValue !== null ? [defaultValue] : []), ...usedValues])];
+
+        const lowerTypedText = typedText.toLowerCase();
+        const matches = candidates
+            .filter((value) => isValid(value))
+            .filter((value) => {
+                const shown = value.toLowerCase();
+                return shown.includes(lowerTypedText) && shown !== lowerTypedText;
+            })
+            .slice(0, maxGenericSuggestions);
+
+        for (const value of matches) {
+            const isDefault = value === defaultValue;
+            results.push({
+                suggestionType: 'match',
+                displayText: isDefault ? `${value} (from ${definition.defaultFromProperty})` : value,
+                appendText: `${symbol} ${value}` + parameters.postfix,
+                insertAt: match.index,
+                insertSkip: calculateSkipValueForMatch(match[0], parameters),
+            });
+        }
+    }
+    return results;
+}
+
 function addIDSuggestion(idSymbol: string, allTasks: Task[], parameters: SuggestorParameters) {
     const results: SuggestInfo[] = [];
     const idRegex = new RegExp(`(${idSymbol})\\s*(${taskIdRegex.source})?`, 'ug');
@@ -708,11 +834,11 @@ export function lastOpenBracket(
  *   * {@link fn}`(line, cursorPos, settings)` otherwise
  */
 export function onlySuggestIfBracketOpen(fn: SuggestionBuilder, brackets: [string, string][]): SuggestionBuilder {
-    return (line, cursorPos, settings, taskToSuggestFor, allTasks): SuggestInfo[] => {
+    return (line, cursorPos, settings, ...otherArguments): SuggestInfo[] => {
         if (!isAnyBracketOpen(line.slice(0, cursorPos), brackets)) {
             return [];
         }
-        return fn(line, cursorPos, settings, taskToSuggestFor, allTasks);
+        return fn(line, cursorPos, settings, ...otherArguments);
     };
 }
 

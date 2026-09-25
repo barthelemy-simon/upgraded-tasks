@@ -1,6 +1,7 @@
 import { type App, Component, MarkdownRenderer } from 'obsidian';
 import { GlobalFilter } from '../Config/GlobalFilter';
 import { TASK_FORMATS, getSettings } from '../Config/Settings';
+import { getCustomFieldDefinitions } from '../CustomFields/CustomFieldDefinition';
 import type { AllTaskDateFields } from '../DateTime/DateFieldTypes';
 import { splitDateText } from '../DateTime/Postponer';
 import type { QueryLayoutOptions } from '../Layout/QueryLayoutOptions';
@@ -214,6 +215,11 @@ export class TaskLineRenderer {
         const emojiSerializer = TASK_FORMATS.tasksPluginEmoji.taskSerializer;
         // Render and build classes for all the task's visible components
         for (const component of this.taskLayoutOptions.shownComponents) {
+            if (component === TaskLayoutComponent.CustomFields) {
+                await this.renderCustomFields(task, parentElement, li);
+                continue;
+            }
+
             const componentString = emojiSerializer.componentToString(
                 task,
                 this.queryLayoutOptions.shortMode,
@@ -298,6 +304,49 @@ export class TaskLineRenderer {
         // priority field.
         if (li.dataset.taskPriority === undefined) {
             fieldRenderer.addDataAttribute(li, task, TaskLayoutComponent.Priority);
+        }
+    }
+
+    /**
+     * Renders each custom field (fork roadmap item 5) as its own span, rather than all of them as one
+     * component, so they can be styled one by one: `.task-custom-field-project`, and a
+     * `data-task-field-project` attribute on both the span and the task's list item. The value is rendered as
+     * Markdown, so a note link can be clicked.
+     */
+    private async renderCustomFields(task: Task, parentElement: HTMLElement, li: HTMLLIElement) {
+        const shortMode = this.queryLayoutOptions.shortMode;
+        for (const definition of getCustomFieldDefinitions()) {
+            const value = task.customFields[definition.key];
+            if (value === undefined || !this.taskLayoutOptions.isCustomFieldShown(definition.key)) {
+                continue;
+            }
+
+            const span = parentElement.createSpan();
+            span.classList.add('task-custom-fields', `task-custom-field-${definition.key}`);
+            if (task.inferredCustomFieldKeys.includes(definition.key)) {
+                // Inherited from the note's property, not written on the task line: shown dimmed.
+                span.classList.add('task-custom-field-inferred');
+                span.setAttribute(
+                    'title',
+                    `${definition.label}, from the note's '${definition.defaultFromProperty}' property`,
+                );
+            }
+            const attributeName = `data-task-field-${definition.key.toLowerCase()}`;
+            const attributeValue = customFieldAttributeValue(value);
+            if (attributeValue !== '') {
+                span.setAttribute(attributeName, attributeValue);
+                li.setAttribute(attributeName, attributeValue);
+            }
+
+            const internalSpan = span.createSpan();
+            if (shortMode) {
+                internalSpan.textContent = ` ${definition.symbol}`;
+                continue;
+            }
+            internalSpan.appendText(` ${definition.symbol} `);
+            const valueSpan = internalSpan.createSpan({ cls: 'task-custom-field-value' });
+            await this.textRenderer(this.obsidianApp, value, valueSpan, task.path, this.obsidianComponent);
+            unwrapParagraph(valueSpan);
         }
     }
 
@@ -478,6 +527,13 @@ export class TaskLineRenderer {
                 reminderDiv.setText(`${reminderTimeSymbol} ${task.reminderTime}`);
             }
 
+            for (const definition of getCustomFieldDefinitions()) {
+                const value = task.customFields[definition.key];
+                if (value !== undefined) {
+                    tooltip.createDiv().setText(`${definition.symbol} ${value}`);
+                }
+            }
+
             const linkText = task.getLinkText({ isFilenameUnique });
             if (linkText) {
                 const backlinkDiv = tooltip.createDiv();
@@ -542,5 +598,33 @@ export class TaskLineRenderer {
         }
 
         return li;
+    }
+}
+
+/**
+ * A custom field value as a data attribute value: without note-link brackets, lower case, with runs of
+ * whitespace and ASCII punctuation replaced by '-'. For example '[[Website Redesign]]' becomes
+ * 'website-redesign'. Accented letters are kept.
+ *
+ * (No 'u'-flag regex here, such as \p{L}: see the iOS parsing note in DefaultTaskSerializer's fieldRegex.)
+ */
+export function customFieldAttributeValue(value: string): string {
+    return value
+        .replace(/^\[\[|\]\]$/g, '')
+        .toLowerCase()
+        .replace(/[\s!-/:-@[-`{-~]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Remove the paragraph that the MarkdownRenderer wraps around a single line of rendered text.
+ */
+function unwrapParagraph(span: HTMLSpanElement) {
+    const pElement = span.querySelector('p');
+    if (pElement !== null) {
+        while (pElement.firstChild) {
+            span.insertBefore(pElement.firstChild, pElement);
+        }
+        pElement.remove();
     }
 }
