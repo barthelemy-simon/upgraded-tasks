@@ -257,3 +257,20 @@
         }
     }
 }
+
+// Custom field note choices (fork), in the edit modal's dropdown and in the editor's auto-suggest:
+// the note's name in bold, its folder below it, smaller and in italic.
+.tasks-note-choice-dropdown li {
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.tasks-note-choice-name {
+    font-weight: var(--font-semibold);
+}
+
+.tasks-note-choice-folder {
+    font-size: var(--font-ui-smaller);
+    font-style: italic;
+    color: var(--text-muted);
+}

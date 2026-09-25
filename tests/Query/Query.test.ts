@@ -23,8 +23,18 @@ import { Priority } from '../../src/Task/Priority';
 import { TaskLayoutComponent } from '../../src/Layout/TaskLayoutOptions';
 import { getTasksFileFromMockData } from '../TestingTools/MockDataHelpers';
 import { createTestTasksFile } from '../TestingTools/TasksFileHelpers';
+import { resetSettings, updateSettings } from '../../src/Config/Settings';
 
 window.moment = moment;
+
+// The custom field instructions ('has field project' etc.) only parse for a field that is defined.
+// Set for the whole file, as the sample-line tests below run concurrently.
+updateSettings({
+    customFields: [{ key: 'project', label: 'Project', symbol: '📁', type: 'noteLink', defaultFromProperty: '' }],
+});
+afterAll(() => {
+    resetSettings();
+});
 
 interface NamedField {
     name: string;
@@ -159,6 +169,8 @@ description includes \
         'due on 2021-12-27',
         'due this week',
         'exclude sub-items',
+        'field project does not include wibble',
+        'field project includes wibble',
         'filename includes wibble',
         'filter by function task.due.formatAsDate().includes("2024");', // The trailing ';' prevents 'Could not interpret the following instruction as a Boolean combination'
         'filter by function task.isDone',
@@ -175,6 +187,7 @@ description includes \
         'has depends on',
         'has done date',
         'has due date',
+        'has field project',
         'has happens date',
         'has id',
         'has reminder',
@@ -198,6 +211,7 @@ description includes \
         'no created date',
         'no depends on',
         'no due date',
+        'no field project',
         'no happens date',
         'no id',
         'no reminder',
@@ -349,6 +363,8 @@ description includes \
             'sort by done reverse',
             'sort by due',
             'sort by due reverse',
+            'sort by field project',
+            'sort by field project reverse',
             'sort by filename',
             'sort by filename reverse',
             'sort by function reverse task.description.length',
@@ -430,6 +446,8 @@ description includes \
             'group by done reverse',
             'group by due',
             'group by due reverse',
+            'group by field project',
+            'group by field project reverse',
             'group by filename',
             'group by filename reverse',
             'group by folder',

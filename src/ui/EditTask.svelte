@@ -3,6 +3,8 @@
     import { defaultEditModalShowSettings } from '../Config/EditModalShowSettings';
 
     import { TASK_FORMATS, getSettings } from '../Config/Settings';
+    import { getCustomFieldDefinitions } from '../CustomFields/CustomFieldDefinition';
+    import CustomFieldsEditor from './CustomFieldsEditor.svelte';
     import type { Status } from '../Statuses/Status';
     import type { Task } from '../Task/Task';
     import { settingsStore } from './SettingsStore';
@@ -20,6 +22,8 @@
     export let onSubmit: (updatedTasks: Task[]) => void | Promise<void>;
     export let statusOptions: Status[];
     export let allTasks: Task[];
+    // Paths of the vault's notes, offered by note-link custom fields.
+    export let getNotePaths: () => string[] = () => [];
 
     const {
         // NEW_TASK_FIELD_EDIT_REQUIRED
@@ -46,6 +50,8 @@
     let isStartDateValid: boolean = true;
 
     let isRecurrenceValid: boolean = true;
+    let isCustomFieldsValid: boolean = true;
+    const hasCustomFields = getCustomFieldDefinitions().length > 0;
 
     let withAccessKeys: boolean = true;
     let formIsValid: boolean = true;
@@ -61,7 +67,8 @@
         isDescriptionValid &&
         isCancelledDateValid &&
         isCreatedDateValid &&
-        isDoneDateValid;
+        isDoneDateValid &&
+        isCustomFieldsValid;
     $: isDescriptionValid = editableTask.description.trim() !== '';
 
     $: isShownInEditModal = { ...defaultEditModalShowSettings, ...$settingsStore.isShownInEditModal };
@@ -113,7 +120,7 @@ Availability of access keys:
 - D: Due
 - E: After this
 - F: Only future dates
-- G:
+- G: (free letters are given to custom fields, in settings order - see assignCustomFieldAccessKeys())
 - H: High
 - I: Highest
 - J:
@@ -166,6 +173,23 @@ Availability of access keys:
             <PriorityEditor bind:priority={editableTask.priority} {withAccessKeys} />
         </section>
         <hr id="line-after-priority" />
+    {/if}
+
+    <!-- --------------------------------------------------------------------------- -->
+    <!--  Custom fields (fork)  -->
+    <!-- --------------------------------------------------------------------------- -->
+    {#if hasCustomFields}
+        <section class="tasks-modal-dates-section tasks-modal-custom-fields-section">
+            <CustomFieldsEditor
+                {task}
+                bind:editableTask
+                {allTasks}
+                {getNotePaths}
+                bind:isCustomFieldsValid
+                {withAccessKeys}
+            />
+        </section>
+        <hr id="line-after-custom-fields" />
     {/if}
 
     <!-- --------------------------------------------------------------------------- -->
